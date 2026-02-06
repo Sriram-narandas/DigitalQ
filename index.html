@@ -3,81 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DigitalQ | Smart Queue System</title>
+    <title>DigitalQ | Enterprise Queue System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { 
-            font-family: 'Outfit', sans-serif; 
-            background-color: #f0f4f8;
-            /* Animated Mesh Gradient Background */
-            background-image: 
-                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-            background-size: 100% 100%;
-            background-attachment: fixed;
-            color: #1e293b;
-        }
-
-        /* Glassmorphism Utilities */
-        .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-        .glass-dark {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        /* Animations */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        
-        @keyframes popIn {
-            0% { transform: scale(0.9); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-pop { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(79, 70, 229, 0); }
-            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
-        }
-        .animate-ring { animation: pulse-ring 2s infinite; }
-
-        /* Ticket Punch Effect */
-        .ticket-edge {
-            background-image: radial-gradient(circle at 10px 50%, transparent 10px, #ffffff 10.5px);
-            background-size: 20px 100%;
-            background-position: -10px 0;
-            background-repeat: repeat-y;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="h-screen flex flex-col overflow-hidden selection:bg-indigo-500 selection:text-white">
 
     <!-- Top Navigation -->
     <nav class="glass sticky top-0 z-50 border-b border-white/20">
-        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-500/30">
                     <i data-lucide="layers" class="text-white w-5 h-5"></i>
                 </div>
                 <div>
-                    <span class="font-extrabold text-xl tracking-tight text-slate-800">DigitalQ</span>
-                    <span class="text-xs text-slate-500 font-medium block -mt-1">Smart Queue</span>
+                    <span id="logo-text" class="font-extrabold text-xl tracking-tight text-slate-800">Q-Flow</span>
+                    <span class="text-xs text-slate-500 font-medium block -mt-1" id="nav-business-name">Loading...</span>
                 </div>
             </div>
             
@@ -102,44 +45,27 @@
                 <!-- Welcome / Join Screen -->
                 <div id="customer-join" class="animate-pop">
                     <div class="text-center mb-10">
-                        <h1 class="text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">Join the Queue</h1>
-                        <p class="text-slate-500 font-medium">Get your digital ticket in seconds.</p>
+                        <div class="inline-flex items-center justify-center p-3 bg-white rounded-full shadow-sm mb-4">
+                             <i data-lucide="map-pin" class="w-6 h-6 text-indigo-600"></i>
+                        </div>
+                        <h1 class="text-4xl font-extrabold text-slate-800 mb-2 tracking-tight" id="cust-welcome-title">Welcome</h1>
+                        <p class="text-slate-500 font-medium">Please select a service to join the queue.</p>
                     </div>
 
                     <div class="glass p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-white">
                         <div class="space-y-6">
                             <div>
-                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Your Name</label>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Your Details</label>
                                 <div class="relative">
                                     <i data-lucide="user" class="absolute left-4 top-3.5 w-5 h-5 text-slate-400"></i>
-                                    <input type="text" id="cust-name" class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300" placeholder="Enter your name">
+                                    <input type="text" id="cust-name" class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-medium text-slate-700 placeholder:text-slate-300" placeholder="Full Name">
                                 </div>
                             </div>
                             
                             <div>
-                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Service Required</label>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <button onclick="selectService('support', this)" class="service-opt p-4 border border-slate-200 bg-white rounded-2xl hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10 text-left transition-all group relative overflow-hidden">
-                                        <div class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                        <div class="relative z-10">
-                                            <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                                <i data-lucide="headset" class="w-5 h-5"></i>
-                                            </div>
-                                            <div class="text-sm font-bold text-slate-800">Support</div>
-                                            <div class="text-[10px] text-slate-400 font-medium mt-0.5">Help & Inquiries</div>
-                                        </div>
-                                    </button>
-                                    <button onclick="selectService('sales', this)" class="service-opt p-4 border border-slate-200 bg-white rounded-2xl hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/10 text-left transition-all group relative overflow-hidden">
-                                        <div class="absolute inset-0 bg-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                        <div class="relative z-10">
-                                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-                                            </div>
-                                            <div class="text-sm font-bold text-slate-800">Sales</div>
-                                            <div class="text-[10px] text-slate-400 font-medium mt-0.5">Purchases</div>
-                                        </div>
-                                    </button>
-                                </div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Select Service</label>
+                                <!-- Dynamic Service Buttons Injected Here -->
+                                <div id="service-options-container" class="grid grid-cols-1 gap-3"></div>
                                 <input type="hidden" id="cust-service">
                             </div>
 
@@ -153,13 +79,12 @@
 
                 <!-- Active Ticket Screen -->
                 <div id="customer-ticket" class="hidden animate-pop pb-10">
-                    <!-- Ticket Card -->
                     <div id="ticket-card-bg" class="bg-white rounded-3xl shadow-2xl shadow-indigo-200/50 overflow-hidden relative transition-all duration-500">
                         
                         <!-- Status Header -->
                         <div id="ticket-header" class="bg-indigo-600 p-8 text-center relative overflow-hidden transition-colors duration-500">
-                            <!-- Animated Background Shapes -->
-                            <div class="absolute top-0 left-0 w-full h-full opacity-20">
+                            <!-- BackgroundFX -->
+                            <div class="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
                                 <div class="absolute top-[-50%] left-[-20%] w-64 h-64 rounded-full bg-white blur-3xl animate-float"></div>
                                 <div class="absolute bottom-[-50%] right-[-20%] w-64 h-64 rounded-full bg-indigo-300 blur-3xl animate-float" style="animation-delay: 2s"></div>
                             </div>
@@ -171,17 +96,20 @@
                                 </span>
                                 
                                 <div class="text-6xl font-black text-white tracking-tighter mb-2 drop-shadow-sm" id="ticket-number-display">--</div>
-                                <div class="text-indigo-100 font-medium text-sm" id="ticket-service-display">Support Service</div>
+                                <div class="text-indigo-100 font-medium text-sm flex items-center justify-center gap-2">
+                                    <span id="ticket-service-display">Service</span>
+                                    <span>•</span>
+                                    <span id="ticket-business-display" class="opacity-75">Business</span>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Ticket Body -->
                         <div class="p-8 relative">
-                            <!-- Decorative Punch Holes -->
                             <div class="absolute top-0 left-0 -mt-3 -ml-3 w-6 h-6 bg-[#f0f4f8] rounded-full"></div>
                             <div class="absolute top-0 right-0 -mt-3 -mr-3 w-6 h-6 bg-[#f0f4f8] rounded-full"></div>
 
-                            <!-- Serving Info (Only visible when called) -->
+                            <!-- Serving Panel -->
                             <div id="serving-info-panel" class="hidden text-center mb-8 animate-pop">
                                 <div class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Please Proceed To</div>
                                 <div class="text-4xl font-extrabold text-indigo-600 flex items-center justify-center gap-2">
@@ -189,7 +117,7 @@
                                 </div>
                             </div>
 
-                            <!-- Waiting Info (Only visible when waiting) -->
+                            <!-- Waiting Panel -->
                             <div id="waiting-info-panel" class="grid grid-cols-2 gap-4 mb-8">
                                 <div class="text-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                     <div class="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Ahead</div>
@@ -201,7 +129,7 @@
                                 </div>
                             </div>
 
-                            <!-- Live Timer -->
+                            <!-- Timer -->
                             <div class="text-center mb-8">
                                 <div class="inline-flex items-center gap-2 text-slate-400 bg-slate-50 px-3 py-1 rounded-lg text-xs font-medium font-mono">
                                     <i data-lucide="clock" class="w-3 h-3"></i>
@@ -209,32 +137,50 @@
                                 </div>
                             </div>
 
-                            <!-- Action -->
                             <button onclick="leaveQueue()" class="w-full border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-semibold py-3 rounded-xl transition-all text-sm">
                                 Leave Queue
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Sound Toggle -->
                     <div class="mt-6 text-center">
                         <button id="audio-toggle" onclick="toggleAudio()" class="text-slate-400 hover:text-indigo-600 transition-colors text-xs font-medium flex items-center justify-center gap-2 mx-auto">
                             <i data-lucide="volume-2" class="w-4 h-4"></i>
                             <span>Audio Alerts On</span>
                         </button>
                     </div>
-
                 </div>
             </div>
         </div>
 
         <!-- ================= STAFF VIEW ================= -->
         <div id="view-staff" class="hidden absolute inset-0 overflow-hidden bg-slate-50">
+            
+            <!-- STAFF LOGIN SCREEN (Overlay) -->
+            <div id="staff-login-screen" class="absolute inset-0 z-50 bg-slate-900/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
+                <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="shield-check" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Staff Portal</h2>
+                    <p class="text-slate-500 text-sm mb-6">Enter PIN to access dashboard</p>
+                    
+                    <div class="flex gap-2 justify-center mb-6">
+                        <input type="password" id="staff-pin" maxlength="4" class="w-32 text-center text-3xl font-bold tracking-widest py-2 border-b-2 border-slate-200 focus:border-indigo-600 outline-none transition-colors" placeholder="••••">
+                    </div>
+                    
+                    <button onclick="checkStaffLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all">
+                        Access Dashboard
+                    </button>
+                    <p class="text-xs text-slate-300 mt-4">Default PIN: 1234</p>
+                </div>
+            </div>
+
+            <!-- STAFF DASHBOARD CONTENT -->
             <div class="h-full flex flex-col md:flex-row max-w-7xl mx-auto">
                 
                 <!-- Queue List Column -->
                 <div class="flex-1 h-full flex flex-col p-6 overflow-hidden">
-                    <!-- Stats Bar -->
                     <div class="grid grid-cols-3 gap-4 mb-6">
                         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                             <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Waiting</div>
@@ -244,28 +190,27 @@
                             <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Served</div>
                             <div class="text-2xl font-bold text-emerald-600 mt-1" id="staff-served-count">0</div>
                         </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                            <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Avg Wait</div>
-                            <div class="text-2xl font-bold text-slate-700 mt-1" id="staff-avg-wait">--</div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 cursor-pointer transition-colors" onclick="openSettingsModal()">
+                            <div class="flex justify-between items-start">
+                                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">System</div>
+                                <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i>
+                            </div>
+                            <div class="text-lg font-bold text-slate-700 mt-1 truncate" id="staff-business-label">Config</div>
                         </div>
                     </div>
 
-                    <!-- The List -->
                     <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                         <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex text-xs font-bold text-slate-400 uppercase tracking-wider">
                             <div class="w-24 pl-2">Ticket</div>
                             <div class="flex-1">Details</div>
                             <div class="w-32 text-right pr-2">Status</div>
                         </div>
-                        <div id="staff-queue-list" class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
-                            <!-- Queue Items -->
-                        </div>
+                        <div id="staff-queue-list" class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar"></div>
                     </div>
                 </div>
 
                 <!-- Controls Column -->
                 <div class="w-full md:w-[28rem] glass-dark h-full flex flex-col p-8 shadow-2xl z-10 relative">
-                    <!-- Background Glow -->
                     <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
 
                     <div class="mb-10 text-center relative z-10">
@@ -276,8 +221,6 @@
                         </div>
                         <h3 class="text-2xl font-bold text-white mb-1" id="staff-current-name">No Active Ticket</h3>
                         <p class="text-indigo-200 text-sm font-medium" id="staff-current-service">Ready to serve</p>
-                        
-                        <!-- Counter Indicator -->
                         <div id="staff-counter-display" class="hidden mt-4 inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-500/30 px-4 py-1.5 rounded-full text-indigo-300 text-sm">
                             <i data-lucide="map-pin" class="w-3 h-3"></i>
                             <span>Assigned to Counter <span id="staff-current-counter-num">1</span></span>
@@ -289,7 +232,6 @@
                             <i data-lucide="bell" class="w-6 h-6 group-hover:rotate-12 transition-transform"></i>
                             <span class="text-lg">Call Next Customer</span>
                         </button>
-                        
                         <div class="grid grid-cols-2 gap-4">
                              <button onclick="completeCurrent()" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 p-4 rounded-2xl font-medium transition-colors flex flex-col items-center gap-2 hover:border-emerald-500/40">
                                 <i data-lucide="check-circle" class="w-6 h-6"></i>
@@ -303,13 +245,58 @@
                     </div>
                     
                     <div class="mt-auto pt-8 border-t border-white/10 text-center relative z-10">
-                        <button onclick="resetSystem()" class="text-slate-500 text-xs hover:text-red-400 transition-colors flex items-center justify-center gap-1 mx-auto">
-                            <i data-lucide="trash-2" class="w-3 h-3"></i> Reset System
+                        <div class="flex justify-center gap-4 text-xs text-slate-500">
+                             <button onclick="openSettingsModal()" class="hover:text-indigo-300 transition-colors flex items-center gap-1">
+                                <i data-lucide="settings" class="w-3 h-3"></i> Configure
+                            </button>
+                            <span>|</span>
+                            <button onclick="resetSystem()" class="hover:text-red-400 transition-colors flex items-center gap-1">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i> Reset Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SETTINGS MODAL -->
+            <div id="settings-modal" class="hidden absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-pop">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-slate-900">System Configuration</h2>
+                        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Business Type</label>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <button onclick="loadPreset('retail')" class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-indigo-50 hover:border-indigo-300 text-sm font-medium transition-colors">Retail / Shop</button>
+                                <button onclick="loadPreset('hospital')" class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-indigo-50 hover:border-indigo-300 text-sm font-medium transition-colors">Hospital</button>
+                                <button onclick="loadPreset('bank')" class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-indigo-50 hover:border-indigo-300 text-sm font-medium transition-colors">Bank</button>
+                                <button onclick="loadPreset('tech')" class="px-3 py-2 rounded-lg border border-slate-200 hover:bg-indigo-50 hover:border-indigo-300 text-sm font-medium transition-colors">Tech Support</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Business Name</label>
+                            <input type="text" id="setting-biz-name" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Services (Comma separated)</label>
+                            <textarea id="setting-services" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none h-24" placeholder="Service 1, Service 2, Service 3"></textarea>
+                            <p class="text-[10px] text-slate-400 mt-1">These will appear as buttons for customers.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+                        <button onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                            Save Changes
                         </button>
                     </div>
                 </div>
-
             </div>
+
         </div>
 
     </main>
@@ -320,397 +307,6 @@
         <span id="toast-msg" class="text-sm font-medium text-white">Notification</span>
     </div>
 
-    <script>
-        // --- Web Audio API Context ---
-        let audioCtx;
-        let audioEnabled = true;
-
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-        // Generate a pleasant "Ding-Dong" sound
-        function playChime() {
-            if (!audioEnabled) return;
-            initAudio();
-            
-            const now = audioCtx.currentTime;
-            
-            // First tone (High)
-            const osc1 = audioCtx.createOscillator();
-            const gain1 = audioCtx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(660, now); // E5
-            gain1.gain.setValueAtTime(0.1, now);
-            gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
-            osc1.connect(gain1);
-            gain1.connect(audioCtx.destination);
-            osc1.start(now);
-            osc1.stop(now + 1.5);
-
-            // Second tone (Lower)
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(554.37, now + 0.4); // C#5
-            gain2.gain.setValueAtTime(0.1, now + 0.4);
-            gain2.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            osc2.start(now + 0.4);
-            osc2.stop(now + 2.5);
-        }
-
-        function toggleAudio() {
-            audioEnabled = !audioEnabled;
-            const btn = document.getElementById('audio-toggle');
-            const icon = audioEnabled ? 'volume-2' : 'volume-x';
-            const text = audioEnabled ? 'Audio Alerts On' : 'Audio Alerts Off';
-            
-            btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i><span>${text}</span>`;
-            lucide.createIcons();
-            
-            if(audioEnabled) playChime(); // Test sound
-        }
-
-        // --- Logic ---
-        
-        lucide.createIcons();
-        const STORE_KEY = 'qflow_v2_data';
-        let timerInterval;
-        
-        let state = {
-            queue: [], 
-            currentTicket: null,
-            lastTicketNumber: 0,
-            stats: {
-                totalServed: 0,
-                totalWaitTime: 0 // in minutes
-            }
-        };
-
-        function loadState() {
-            const saved = localStorage.getItem(STORE_KEY);
-            if (saved) {
-                state = JSON.parse(saved);
-                state.queue.forEach(q => {
-                    q.joinedAt = new Date(q.joinedAt);
-                    if(q.servedAt) q.servedAt = new Date(q.servedAt);
-                });
-                if(state.currentTicket) state.currentTicket.joinedAt = new Date(state.currentTicket.joinedAt);
-            }
-            render();
-        }
-
-        function saveState() {
-            localStorage.setItem(STORE_KEY, JSON.stringify(state));
-            render();
-            window.dispatchEvent(new Event('storage'));
-        }
-
-        function switchView(view) {
-            document.getElementById('view-customer').classList.add('hidden');
-            document.getElementById('view-staff').classList.add('hidden');
-            
-            // Reset Styles
-            const inactive = "px-5 py-2 rounded-lg text-sm font-semibold transition-all text-slate-500 hover:text-slate-700";
-            const active = "px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-indigo-600";
-            
-            document.getElementById('btn-customer').className = inactive;
-            document.getElementById('btn-staff').className = inactive;
-            
-            if (view === 'customer') {
-                document.getElementById('view-customer').classList.remove('hidden');
-                document.getElementById('btn-customer').className = active;
-            } else {
-                document.getElementById('view-staff').classList.remove('hidden');
-                document.getElementById('btn-staff').className = active;
-            }
-            render();
-        }
-
-        // --- Customer Logic ---
-        let myTicketId = null;
-
-        function selectService(type, btnElement) {
-            document.getElementById('cust-service').value = type;
-            document.querySelectorAll('.service-opt').forEach(b => {
-                b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50');
-                b.classList.add('bg-white');
-            });
-            btnElement.classList.remove('bg-white');
-            btnElement.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
-        }
-
-        function joinQueue() {
-            const name = document.getElementById('cust-name').value;
-            const service = document.getElementById('cust-service').value;
-
-            if (!name || !service) {
-                showToast("Please enter your name & select service");
-                return;
-            }
-            
-            // Interaction: Init audio context on user gesture
-            initAudio();
-
-            state.lastTicketNumber++;
-            const ticketLetter = service === 'sales' ? 'S' : 'A';
-            const ticketNum = `${ticketLetter}-${String(state.lastTicketNumber).padStart(3, '0')}`;
-            
-            const newEntry = {
-                id: Date.now().toString(),
-                ticket: ticketNum,
-                name: name,
-                service: service,
-                status: 'waiting',
-                joinedAt: new Date(),
-                counter: null
-            };
-
-            state.queue.push(newEntry);
-            myTicketId = newEntry.id;
-            saveState();
-            
-            document.getElementById('customer-join').classList.add('hidden');
-            document.getElementById('customer-ticket').classList.remove('hidden');
-            
-            // Start local wait timer
-            if(timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(updateMyTimer, 1000);
-        }
-
-        function updateMyTimer() {
-            if(!myTicketId) return;
-            const myEntry = state.queue.find(q => q.id === myTicketId);
-            if(myEntry && myEntry.status === 'waiting') {
-                const diff = Math.floor((new Date() - new Date(myEntry.joinedAt)) / 1000);
-                const mins = Math.floor(diff / 60).toString().padStart(2, '0');
-                const secs = (diff % 60).toString().padStart(2, '0');
-                document.getElementById('wait-timer').innerText = `Waited: ${mins}:${secs}`;
-            } else {
-                document.getElementById('wait-timer').innerText = '';
-            }
-        }
-
-        function leaveQueue() {
-            if (myTicketId) {
-                state.queue = state.queue.filter(q => q.id !== myTicketId);
-                myTicketId = null;
-                saveState();
-            }
-            document.getElementById('cust-name').value = '';
-            document.getElementById('customer-join').classList.remove('hidden');
-            document.getElementById('customer-ticket').classList.add('hidden');
-            if(timerInterval) clearInterval(timerInterval);
-        }
-
-        // --- Staff Logic ---
-
-        function callNext() {
-            const nextIdx = state.queue.findIndex(q => q.status === 'waiting');
-            
-            if (nextIdx === -1) {
-                showToast("Queue is empty!");
-                return;
-            }
-
-            // Complete current if exists
-            if (state.currentTicket) {
-                const oldIdx = state.queue.findIndex(q => q.id === state.currentTicket.id);
-                if (oldIdx !== -1 && state.queue[oldIdx].status === 'serving') {
-                     completeCurrent();
-                }
-            }
-
-            // Assign random counter (1, 2, or 3)
-            const counterNum = Math.ceil(Math.random() * 3);
-
-            state.queue[nextIdx].status = 'serving';
-            state.queue[nextIdx].counter = counterNum;
-            state.queue[nextIdx].servedAt = new Date();
-            state.currentTicket = state.queue[nextIdx];
-            
-            saveState();
-            showToast(`Calling ${state.currentTicket.ticket}`);
-        }
-
-        function completeCurrent() {
-            if (!state.currentTicket) return;
-            const idx = state.queue.findIndex(q => q.id === state.currentTicket.id);
-            if (idx !== -1) {
-                const item = state.queue[idx];
-                item.status = 'completed';
-                
-                // Update stats
-                state.stats.totalServed++;
-                const waitMins = (new Date(item.servedAt) - new Date(item.joinedAt)) / 60000;
-                state.stats.totalWaitTime += waitMins;
-                
-                state.currentTicket = null;
-                saveState();
-                showToast("Ticket Completed");
-            }
-        }
-
-        function markNoShow() {
-            if (!state.currentTicket) return;
-            const idx = state.queue.findIndex(q => q.id === state.currentTicket.id);
-            if (idx !== -1) {
-                state.queue[idx].status = 'noshow';
-                state.currentTicket = null;
-                saveState();
-                showToast("Marked No Show");
-            }
-        }
-
-        function resetSystem() {
-            if(confirm("Factory Reset: Clear all data?")) {
-                state = { 
-                    queue: [], 
-                    currentTicket: null, 
-                    lastTicketNumber: 0,
-                    stats: { totalServed: 0, totalWaitTime: 0 }
-                };
-                saveState();
-                location.reload();
-            }
-        }
-
-        // --- Rendering ---
-        
-        let previousStatus = null; // To track status changes for audio
-
-        function render() {
-            // Customer View
-            if (myTicketId) {
-                const myEntry = state.queue.find(q => q.id === myTicketId);
-                if (!myEntry) { leaveQueue(); return; }
-
-                document.getElementById('ticket-number-display').innerText = myEntry.ticket;
-                document.getElementById('ticket-service-display').innerText = myEntry.service.toUpperCase();
-                
-                const header = document.getElementById('ticket-header');
-                const statusTxt = document.getElementById('ticket-status-text');
-                const waitingPanel = document.getElementById('waiting-info-panel');
-                const servingPanel = document.getElementById('serving-info-panel');
-
-                // Audio Trigger Logic
-                if (previousStatus === 'waiting' && myEntry.status === 'serving') {
-                    playChime();
-                    if("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
-                }
-                previousStatus = myEntry.status;
-
-                if (myEntry.status === 'waiting') {
-                    header.className = "bg-indigo-600 p-8 text-center relative overflow-hidden transition-colors duration-500";
-                    statusTxt.innerText = "In Queue";
-                    statusTxt.parentElement.className = "inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-sm font-semibold text-white mb-4 border border-white/10";
-                    
-                    const ahead = state.queue.filter(q => q.status === 'waiting' && q.id < myTicketId).length;
-                    document.getElementById('people-ahead').innerText = ahead;
-                    document.getElementById('est-wait').innerText = (ahead * 5 + 5) + "m";
-                    
-                    waitingPanel.classList.remove('hidden');
-                    servingPanel.classList.add('hidden');
-                } 
-                else if (myEntry.status === 'serving') {
-                    header.className = "bg-emerald-500 p-8 text-center relative overflow-hidden transition-colors duration-500";
-                    statusTxt.innerText = "It's Your Turn!";
-                    statusTxt.parentElement.className = "inline-flex items-center gap-2 bg-black/20 backdrop-blur-md px-4 py-1.5 rounded-full text-sm font-semibold text-white mb-4 border border-white/10 animate-bounce";
-                    
-                    document.getElementById('assigned-counter').innerText = myEntry.counter || 1;
-                    
-                    waitingPanel.classList.add('hidden');
-                    servingPanel.classList.remove('hidden');
-                }
-            }
-
-            // Staff View - Stats
-            const waitingCount = state.queue.filter(q => q.status === 'waiting').length;
-            const avgWait = state.stats.totalServed > 0 
-                ? Math.round(state.stats.totalWaitTime / state.stats.totalServed) + "m" 
-                : "--";
-
-            document.getElementById('staff-waiting-count').innerText = waitingCount;
-            document.getElementById('staff-served-count').innerText = state.stats.totalServed;
-            document.getElementById('staff-avg-wait').innerText = avgWait;
-
-            // Staff View - Current Active
-            if (state.currentTicket) {
-                document.getElementById('staff-current-ticket').innerText = state.currentTicket.ticket;
-                document.getElementById('staff-current-name').innerText = state.currentTicket.name;
-                document.getElementById('staff-current-service').innerText = state.currentTicket.service.toUpperCase();
-                
-                document.getElementById('staff-counter-display').classList.remove('hidden');
-                document.getElementById('staff-current-counter-num').innerText = state.currentTicket.counter;
-            } else {
-                document.getElementById('staff-current-ticket').innerText = "--";
-                document.getElementById('staff-current-name').innerText = "No Active Ticket";
-                document.getElementById('staff-current-service').innerText = "Ready to serve";
-                document.getElementById('staff-counter-display').classList.add('hidden');
-            }
-
-            // Staff View - List
-            const queueList = document.getElementById('staff-queue-list');
-            queueList.innerHTML = '';
-            
-            // Sort: Serving first, then waiting chronologically
-            const relevant = state.queue.filter(q => ['waiting', 'serving'].includes(q.status)).sort((a,b) => {
-                 if (a.status === 'serving' && b.status !== 'serving') return -1;
-                 if (b.status === 'serving' && a.status !== 'serving') return 1;
-                 return new Date(a.joinedAt) - new Date(b.joinedAt);
-            });
-
-            if (relevant.length === 0) {
-                queueList.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm italic">Queue is currently empty.</div>`;
-            }
-
-            relevant.forEach(q => {
-                const isServing = q.status === 'serving';
-                const waitMins = Math.floor((new Date() - new Date(q.joinedAt)) / 60000);
-                
-                queueList.innerHTML += `
-                    <div class="flex items-center p-3 rounded-xl border ${isServing ? 'bg-indigo-50 border-indigo-200 shadow-inner' : 'bg-white border-slate-100 hover:border-slate-300'} transition-all">
-                        <div class="w-24 font-mono font-bold text-lg ${isServing ? 'text-indigo-600' : 'text-slate-600'}">${q.ticket}</div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm font-bold text-slate-800 truncate">${q.name}</div>
-                            <div class="text-xs text-slate-500 capitalize flex items-center gap-1.5">
-                                ${q.service} • ${waitMins}m wait
-                            </div>
-                        </div>
-                        <div class="w-32 text-right">
-                            ${isServing 
-                                ? `<span class="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md text-xs font-bold"><i data-lucide="mic" class="w-3 h-3"></i> Counter ${q.counter}</span>` 
-                                : `<span class="bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-xs font-medium">Waiting</span>`
-                            }
-                        </div>
-                    </div>
-                `;
-            });
-
-            lucide.createIcons();
-        }
-
-        function showToast(msg) {
-            const el = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            el.classList.remove('translate-y-24');
-            setTimeout(() => el.classList.add('translate-y-24'), 3000);
-        }
-
-        window.addEventListener('storage', loadState);
-        
-        // Init
-        loadState();
-        switchView('customer');
-        setInterval(render, 30000); // Sync fallback
-
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
