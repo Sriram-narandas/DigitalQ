@@ -245,16 +245,21 @@
                     </div>
                     
                     <div class="mt-auto pt-8 border-t border-white/10 text-center relative z-10">
-                        <div class="flex justify-center gap-4 text-xs text-slate-500">
-                             <button onclick="openSettingsModal()" class="hover:text-indigo-300 transition-colors flex items-center gap-1">
-                                <i data-lucide="settings" class="w-3 h-3"></i> Configure
-                            </button>
-                            <span>|</span>
-                            <button onclick="resetSystem()" class="hover:text-red-400 transition-colors flex items-center gap-1">
-                                <i data-lucide="trash-2" class="w-3 h-3"></i> Reset Data
-                            </button>
-                        </div>
+                          <div class="flex justify-center gap-4 text-xs text-white">
+                     <!-- Configure -->
+                         <button onclick="openSettingsModal()" class="hover:text-blue-400 transition-colors flex items-center gap-1">
+                            <i data-lucide="settings" class="w-3 h-3"></i> Configure
+                        </button>
+                        <span class="text-slate-500">|</span>
+                    
+                        <!-- Reset -->
+                        <button onclick="resetSystem()" class="hover:text-red-400 transition-colors flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i> Reset Data
+                        </button>
+                    
+                      </div>
                     </div>
+
                 </div>
             </div>
             
