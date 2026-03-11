@@ -16,30 +16,50 @@ function toggleDarkMode() {
 initDarkMode();
 
 // --- QR Code ---
-let qrGenerated = false;
+function getQRUrl() {
+    // Default to the deployed GitHub Pages URL
+    return 'https://sriram-narandas.github.io/DigitalQ';
+}
+
+function generateQRImage(url) {
+    const container = document.getElementById('qr-code-container');
+    const urlDisplay = document.getElementById('qr-url-display');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (url.startsWith('file://')) {
+        container.innerHTML = '<p class="text-amber-500 text-sm font-semibold">\u26a0 Cannot generate QR for local files.<br>Deploy via GitHub Pages first.</p>';
+        if (urlDisplay) urlDisplay.textContent = url;
+        return;
+    }
+
+    const img = document.createElement('img');
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=1e293b&bgcolor=ffffff&data=' + encodeURIComponent(url);
+    img.width = 200;
+    img.height = 200;
+    img.alt = 'QR Code';
+    img.style.borderRadius = '8px';
+    img.onerror = function() {
+        container.innerHTML = '<p class="text-red-500 text-sm">Failed to load QR code. Check your internet connection.</p>';
+    };
+    container.appendChild(img);
+    if (urlDisplay) urlDisplay.textContent = url;
+}
 
 function showQRModal() {
     const modal = document.getElementById('qr-modal');
     if (modal) modal.classList.remove('hidden');
-    if (!qrGenerated) {
-        const container = document.getElementById('qr-code-container');
-        const urlDisplay = document.getElementById('qr-url-display');
-        if (container) {
-            container.innerHTML = '';
-            const pageUrl = window.location.href.split('?')[0];
-            new QRCode(container, {
-                text: pageUrl,
-                width: 200,
-                height: 200,
-                colorDark: '#1e293b',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            if (urlDisplay) urlDisplay.textContent = pageUrl;
-            qrGenerated = true;
-        }
-    }
+    const urlInput = document.getElementById('qr-url-input');
+    const qrUrl = getQRUrl();
+    if (urlInput) urlInput.value = qrUrl;
+    generateQRImage(qrUrl);
     lucide.createIcons();
+}
+
+function regenerateQR() {
+    const urlInput = document.getElementById('qr-url-input');
+    if (!urlInput || !urlInput.value.trim()) { showToast('Please enter a URL'); return; }
+    generateQRImage(urlInput.value.trim());
 }
 
 function closeQRModal() {
@@ -50,22 +70,100 @@ function closeQRModal() {
 function printQRCode() {
     const container = document.getElementById('qr-code-container');
     const qrImg = container ? container.querySelector('img') : null;
-    const canvas = container ? container.querySelector('canvas') : null;
-    const imgSrc = qrImg ? qrImg.src : (canvas ? canvas.toDataURL() : null);
-    if (!imgSrc) return;
+    if (!qrImg || !qrImg.src) { showToast('No QR code to print'); return; }
 
     const bizName = state.settings.businessName || 'DigitalQ';
+    const urlInput = document.getElementById('qr-url-input');
+    const qrUrl = urlInput ? urlInput.value.trim() : qrImg.src;
+    const services = state.settings.services || [];
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`<!DOCTYPE html><html><head><title>QR Code - ${bizName}</title>
         <style>body{font-family:Arial,sans-serif;text-align:center;padding:40px;}
         h1{font-size:28px;margin-bottom:8px;} p{color:#666;font-size:14px;margin-bottom:24px;}
         img{width:250px;height:250px;} .url{font-size:10px;color:#999;margin-top:16px;word-break:break-all;}
+        .services{font-size:12px;color:#888;margin-top:8px;}
         @media print{body{padding:20px;}}</style></head>
         <body><h1>${bizName}</h1><p>Scan to join the queue</p>
-        <img src="${imgSrc}" alt="QR Code">
-        <p class="url">${window.location.href.split('?')[0]}</p></body></html>`);
+        <img src="${qrImg.src}" alt="QR Code">
+        <p class="services">Services: ${services.join(' &bull; ')}</p>
+        <p class="url">${qrUrl}</p></body></html>`);
     printWindow.document.close();
     printWindow.onload = function() { printWindow.print(); };
+}
+
+function downloadQRCode() {
+    const container = document.getElementById('qr-code-container');
+    const qrImg = container ? container.querySelector('img') : null;
+    if (!qrImg || !qrImg.src) { showToast('No QR code to download'); return; }
+
+    const bizName = state.settings.businessName || 'DigitalQ';
+    const urlInput = document.getElementById('qr-url-input');
+    const qrUrl = urlInput ? urlInput.value.trim() : '';
+    const services = (state.settings.services || []).join('  \u2022  ');
+
+    // Create a branded poster canvas
+    const canvas = document.createElement('canvas');
+    const w = 500, h = 650;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+
+    // Header bar
+    ctx.fillStyle = '#4f46e5';
+    ctx.fillRect(0, 0, w, 80);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 30px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(bizName, w / 2, 52);
+
+    // Subtitle
+    ctx.fillStyle = '#64748b';
+    ctx.font = '16px Arial, sans-serif';
+    ctx.fillText('Scan to join the queue', w / 2, 115);
+
+    // Draw QR image onto canvas
+    const tempImg = new Image();
+    tempImg.crossOrigin = 'anonymous';
+    tempImg.onload = function() {
+        const qrSize = 250;
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect((w - qrSize - 30) / 2, 130, qrSize + 30, qrSize + 30);
+        ctx.drawImage(tempImg, (w - qrSize) / 2, 145, qrSize, qrSize);
+
+        // Services
+        if (services) {
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '13px Arial, sans-serif';
+            ctx.fillText(services, w / 2, 430);
+        }
+
+        // URL
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px Arial, sans-serif';
+        ctx.fillText(qrUrl, w / 2, 460);
+
+        // Footer
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(0, h - 40, w, 40);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px Arial, sans-serif';
+        ctx.fillText('Powered by DigitalQ', w / 2, h - 15);
+
+        // Download
+        const link = document.createElement('a');
+        link.download = bizName.replace(/[^a-zA-Z0-9]/g, '_') + '_QR.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('QR code downloaded!');
+    };
+    tempImg.onerror = function() {
+        showToast('Failed to download. Try Print instead.');
+    };
+    tempImg.src = qrImg.src;
 }
 
 // --- Web Audio API Context ---
@@ -600,8 +698,7 @@ function render() {
         // Ticket was removed (completed or no-show) — show completed screen
         if (!myEntry) {
             showCompletedScreen();
-            return;
-        }
+        } else {
 
         const ticketNumDisplay = document.getElementById('ticket-number-display');
         const ticketServiceDisplay = document.getElementById('ticket-service-display');
@@ -651,6 +748,7 @@ function render() {
             if (waitingPanel) waitingPanel.classList.add('hidden');
             if (servingPanel) servingPanel.classList.remove('hidden');
         }
+    } // end else (myEntry exists)
     }
 
     // Staff Stats
@@ -702,7 +800,10 @@ function render() {
         } else {
             relevant.forEach(q => {
                 const isServing = q.status === 'serving';
-                const waitMins = Math.floor((new Date() - new Date(q.joinedAt)) / 60000);
+                const diffSec = Math.floor((new Date() - new Date(q.joinedAt)) / 1000);
+                const mins = Math.floor(diffSec / 60);
+                const secs = diffSec % 60;
+                const timeStr = mins > 0 ? mins + 'm ' + String(secs).padStart(2, '0') + 's' : secs + 's';
                 
                 // Create elements safely without XSS vulnerability
                 const itemDiv = document.createElement('div');
@@ -719,7 +820,7 @@ function render() {
                 nameDiv.textContent = q.name;
                 const serviceDiv = document.createElement('div');
                 serviceDiv.className = 'text-xs text-slate-500 dark:text-slate-400 capitalize flex items-center gap-1.5';
-                serviceDiv.textContent = q.service + ' • ' + waitMins + 'm wait';
+                serviceDiv.textContent = q.service + ' • ' + timeStr + ' wait';
                 detailsDiv.appendChild(nameDiv);
                 detailsDiv.appendChild(serviceDiv);
                 
@@ -785,4 +886,11 @@ function showToast(msg) {
 
 loadState();
 switchView('customer');
-setInterval(render, 30000);
+
+// Refresh staff queue wait times every second
+let staffTimerInterval = setInterval(function() {
+    const staffView = document.getElementById('view-staff');
+    if (staffView && !staffView.classList.contains('hidden')) {
+        render();
+    }
+}, 1000);

@@ -11,7 +11,6 @@
         }
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -294,23 +293,6 @@
                 </div>
             </div>
             
-            <!-- QR CODE MODAL -->
-            <div id="qr-modal" class="hidden fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-pop text-center">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Scan to Join Queue</h2>
-                        <button onclick="closeQRModal()" title="Close QR code" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><i data-lucide="x" class="w-6 h-6"></i></button>
-                    </div>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Customers can scan this QR code to open the queue page on their phone.</p>
-                    <div id="qr-code-container" class="flex justify-center mb-4 bg-white p-4 rounded-xl mx-auto"></div>
-                    <p class="text-xs text-slate-400 mt-2 break-all mb-4" id="qr-url-display"></p>
-                    <button onclick="printQRCode()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="printer" class="w-4 h-4"></i>
-                        <span>Print QR Code</span>
-                    </button>
-                </div>
-            </div>
-
             <!-- SETTINGS MODAL -->
             <div id="settings-modal" class="hidden absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-pop">
@@ -353,6 +335,36 @@
         </div>
 
     </main>
+
+    <!-- QR CODE MODAL (outside main to avoid overflow clipping) -->
+    <div id="qr-modal" class="hidden fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-pop text-center">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white">Scan to Join Queue</h2>
+                <button onclick="closeQRModal()" title="Close QR code" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Customers can scan this QR code to open the queue page on their phone.</p>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 text-left">QR Code URL</label>
+                <div class="flex gap-2">
+                    <input type="text" id="qr-url-input" class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Enter URL">
+                    <button onclick="regenerateQR()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors">Generate</button>
+                </div>
+            </div>
+            <div id="qr-code-container" class="flex justify-center mb-4 bg-white p-4 rounded-xl mx-auto"></div>
+            <p class="text-xs text-slate-400 mt-2 break-all mb-4" id="qr-url-display"></p>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="downloadQRCode()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Download</span>
+                </button>
+                <button onclick="printQRCode()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    <span>Print</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Notification Toast -->
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 glass-dark px-6 py-3 rounded-full shadow-2xl transform translate-y-24 transition-transform duration-300 z-[100] flex items-center gap-3 border border-white/10">
