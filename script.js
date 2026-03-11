@@ -72,21 +72,11 @@ let state = {
     }
 };
 
-// Recompute stats from queue to ensure accuracy
-function recomputeStats() {
-    const completed = state.queue.filter(q => q.status === 'completed');
-    const totalServed = completed.length;
-    let totalWaitTime = 0;
-    completed.forEach(item => {
-        if (item.servedAt && item.joinedAt) {
-            const served = new Date(item.servedAt);
-            const joined = new Date(item.joinedAt);
-            const diffMins = (served - joined) / 60000;
-            if (!isNaN(diffMins) && diffMins > 0) totalWaitTime += diffMins;
-        }
-    });
-    state.stats.totalServed = totalServed;
-    state.stats.totalWaitTime = totalWaitTime;
+// Ensure stats object exists
+function ensureStats() {
+    if (!state.stats) {
+        state.stats = { totalServed: 0, totalWaitTime: 0 };
+    }
 }
 
 let stateListener = null;
@@ -116,8 +106,7 @@ function loadState() {
                 if (state.currentTicket.servedAt) state.currentTicket.servedAt = new Date(state.currentTicket.servedAt);
             }
         }
-        // Recompute stats in case persisted data and stats drifted
-        recomputeStats();
+        ensureStats();
         render();
         // Re-render customer join form if services changed
         renderCustomerJoin();
@@ -125,8 +114,7 @@ function loadState() {
 }
 
 function saveState() {
-    // Ensure stats reflect current queue before saving
-    recomputeStats();
+    ensureStats();
     // Convert state to a plain object safe for Firebase (Dates become ISO strings)
     const payload = JSON.parse(JSON.stringify(state));
     stateRef.set(payload).catch((error) => {
@@ -400,7 +388,6 @@ function markNoShow() {
         // Remove no-show ticket from queue (deletes from database)
         state.queue.splice(idx, 1);
         state.currentTicket = null;
-        recomputeStats();
         saveState();
         showToast("Marked No Show & Removed");
     }
