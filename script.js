@@ -275,17 +275,22 @@ function switchSystem(systemKey) {
     loadState();
 }
 
-// Load available systems index for department picker
-function loadSystemsIndex(callback) {
-    db.ref('systemsIndex').once('value', (snap) => {
-        const data = snap.val() || {};
-        callback(data);
+// Real-time listener for systems index (drives customer department picker)
+let systemsIndexListener = null;
+
+function listenSystemsIndex() {
+    if (systemsIndexListener) return; // already listening
+    systemsIndexListener = db.ref('systemsIndex').on('value', (snap) => {
+        renderDepartmentPicker(snap.val() || {});
     });
 }
 
-// Save system name to index so department picker can discover it
+// Save system info to index so department picker can discover it
 function updateSystemsIndex() {
-    db.ref('systemsIndex/' + activeSystemKey).set(state.settings.businessName);
+    db.ref('systemsIndex/' + activeSystemKey).set({
+        name: state.settings.businessName,
+        services: state.settings.services
+    });
 }
 
 let stateListener = null;
@@ -519,21 +524,40 @@ function selectService(type, btnElement) {
 }
 
 // --- Customer Department Picker ---
-function renderDepartmentPicker() {
+const deptStyles = {
+    retail:   { icon: 'shopping-bag', gradient: 'from-orange-400 to-pink-500',   shadow: 'shadow-orange-500/25', bg: 'bg-orange-50 dark:bg-orange-900/20',  border: 'hover:border-orange-300' },
+    hospital: { icon: 'heart-pulse',  gradient: 'from-rose-400 to-red-500',      shadow: 'shadow-rose-500/25',   bg: 'bg-rose-50 dark:bg-rose-900/20',    border: 'hover:border-rose-300' },
+    bank:     { icon: 'landmark',     gradient: 'from-emerald-400 to-teal-500',  shadow: 'shadow-emerald-500/25',bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'hover:border-emerald-300' },
+    tech:     { icon: 'monitor',      gradient: 'from-blue-400 to-indigo-500',   shadow: 'shadow-blue-500/25',   bg: 'bg-blue-50 dark:bg-blue-900/20',    border: 'hover:border-blue-300' }
+};
+const defaultStyle = { icon: 'layers', gradient: 'from-slate-400 to-slate-500', shadow: 'shadow-slate-500/25', bg: 'bg-slate-50 dark:bg-slate-800', border: 'hover:border-slate-300' };
+
+function renderDepartmentPicker(liveIndex) {
     const container = document.getElementById('dept-picker-container');
     if (!container) return;
     container.innerHTML = '';
 
-    const deptStyles = {
-        retail:   { icon: 'shopping-bag', gradient: 'from-orange-400 to-pink-500',   shadow: 'shadow-orange-500/25', bg: 'bg-orange-50 dark:bg-orange-900/20',  border: 'hover:border-orange-300' },
-        hospital: { icon: 'heart-pulse',  gradient: 'from-rose-400 to-red-500',      shadow: 'shadow-rose-500/25',   bg: 'bg-rose-50 dark:bg-rose-900/20',    border: 'hover:border-rose-300' },
-        bank:     { icon: 'landmark',     gradient: 'from-emerald-400 to-teal-500',  shadow: 'shadow-emerald-500/25',bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'hover:border-emerald-300' },
-        tech:     { icon: 'monitor',      gradient: 'from-blue-400 to-indigo-500',   shadow: 'shadow-blue-500/25',   bg: 'bg-blue-50 dark:bg-blue-900/20',    border: 'hover:border-blue-300' }
-    };
+    // Merge presets with live Firebase data — live data overrides names/services
+    const allKeys = new Set([...Object.keys(PRESETS), ...Object.keys(liveIndex || {})]);
 
-    Object.keys(PRESETS).forEach(key => {
-        const p = PRESETS[key];
-        const s = deptStyles[key] || { icon: 'layers', gradient: 'from-slate-400 to-slate-500', shadow: 'shadow-slate-500/25', bg: 'bg-slate-50', border: 'hover:border-slate-300' };
+    allKeys.forEach(key => {
+        const live = liveIndex && liveIndex[key]; // { name, services } or old string or null
+        const preset = PRESETS[key];
+        const s = deptStyles[key] || defaultStyle;
+
+        // Determine display name and services from live data (Firebase) first, preset as fallback
+        let displayName, displayServices;
+        if (live && typeof live === 'object') {
+            displayName = live.name || (preset ? preset.name : key);
+            displayServices = Array.isArray(live.services) ? live.services : (preset ? preset.services : []);
+        } else if (live && typeof live === 'string') {
+            // Legacy: index stored just the name string
+            displayName = live;
+            displayServices = preset ? preset.services : [];
+        } else {
+            displayName = preset ? preset.name : key;
+            displayServices = preset ? preset.services : [];
+        }
 
         const btn = document.createElement('button');
         btn.className = `dept-btn flex flex-col items-center p-5 border-2 border-slate-100 dark:border-slate-700 ${s.bg} rounded-3xl ${s.border} hover:shadow-xl hover:-translate-y-1 text-center transition-all duration-300 group`;
@@ -545,11 +569,11 @@ function renderDepartmentPicker() {
 
         const nameEl = document.createElement('div');
         nameEl.className = 'font-bold text-sm text-slate-800 dark:text-slate-200 mb-1 leading-tight';
-        nameEl.textContent = p.name;
+        nameEl.textContent = displayName;
 
         const svcEl = document.createElement('div');
         svcEl.className = 'text-[10px] text-slate-400 dark:text-slate-500 leading-snug';
-        svcEl.textContent = p.services.length + ' services';
+        svcEl.textContent = displayServices.length + ' services';
 
         btn.appendChild(iconWrap);
         btn.appendChild(nameEl);
@@ -557,29 +581,6 @@ function renderDepartmentPicker() {
         container.appendChild(btn);
     });
 
-    // Also load any custom systems from Firebase
-    loadSystemsIndex((index) => {
-        Object.keys(index).forEach(key => {
-            if (PRESETS[key]) return;
-            const name = index[key];
-            const btn = document.createElement('button');
-            btn.className = 'dept-btn flex flex-col items-center p-5 border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-3xl hover:border-indigo-300 hover:shadow-xl hover:-translate-y-1 text-center transition-all duration-300 group';
-            btn.onclick = () => selectDepartment(key);
-
-            const iconWrap = document.createElement('div');
-            iconWrap.className = 'w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-500 shadow-lg shadow-slate-500/25 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300';
-            iconWrap.innerHTML = '<i data-lucide="layers" class="w-6 h-6 text-white"></i>';
-
-            const nameEl = document.createElement('div');
-            nameEl.className = 'font-bold text-sm text-slate-800 dark:text-slate-200 mb-1';
-            nameEl.textContent = name;
-
-            btn.appendChild(iconWrap);
-            btn.appendChild(nameEl);
-            container.appendChild(btn);
-        });
-        lucide.createIcons();
-    });
     lucide.createIcons();
 }
 
@@ -1050,8 +1051,10 @@ function showToast(msg) {
 loadState();
 switchView('customer');
 
-// Populate customer department picker on load
-renderDepartmentPicker();
+// Start real-time listener for department picker (auto-updates when staff changes config)
+listenSystemsIndex();
+// Also render with preset defaults immediately (before Firebase responds)
+renderDepartmentPicker({});
 
 // Refresh staff queue wait times every second
 let staffTimerInterval = setInterval(function() {
