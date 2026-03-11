@@ -54,9 +54,21 @@
         <!-- ================= CUSTOMER VIEW ================= -->
         <div id="view-customer" class="absolute inset-0 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 pb-20 scroll-smooth">
             <div class="max-w-md mx-auto pt-10 px-4">
-                
+
+                <!-- Department Picker (Step 0) -->
+                <div id="customer-dept-picker" class="animate-pop">
+                    <div class="text-center mb-8">
+                        <div class="inline-flex items-center justify-center p-3 bg-white rounded-full shadow-sm mb-4">
+                             <i data-lucide="building-2" class="w-6 h-6 text-indigo-600"></i>
+                        </div>
+                        <h1 class="text-3xl font-extrabold text-slate-800 dark:text-white mb-2 tracking-tight">Select Department</h1>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium">Choose which department queue to join.</p>
+                    </div>
+                    <div id="dept-picker-container" class="space-y-3 mb-6"></div>
+                </div>
+
                 <!-- Welcome / Join Screen -->
-                <div id="customer-join" class="animate-pop">
+                <div id="customer-join" class="hidden animate-pop">
                     <div class="text-center mb-10">
                         <div class="inline-flex items-center justify-center p-3 bg-white rounded-full shadow-sm mb-4">
                              <i data-lucide="map-pin" class="w-6 h-6 text-indigo-600"></i>
@@ -85,6 +97,10 @@
                             <button onclick="joinQueue()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-xl shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-3 group mt-2">
                                 <span>Get Ticket</span>
                                 <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                            <button onclick="backToDeptPicker()" class="w-full mt-3 text-slate-400 hover:text-indigo-600 text-sm font-medium py-2 transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                                <span>Change Department</span>
                             </button>
                         </div>
                     </div>
@@ -183,15 +199,33 @@
             
             <!-- STAFF LOGIN SCREEN (Overlay) -->
             <div id="staff-login-screen" class="absolute inset-0 z-50 bg-slate-900/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
-                <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+                <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
                     <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
                         <i data-lucide="shield-check" class="w-8 h-8"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-slate-900 mb-2">Staff Portal</h2>
-                    <p class="text-slate-500 text-sm mb-6">Enter PIN to access dashboard</p>
+                    <p class="text-slate-500 text-sm mb-4">Enter PIN and select your system</p>
                     
-                    <div class="flex gap-2 justify-center mb-6">
+                    <div class="flex gap-2 justify-center mb-4">
                         <input type="password" id="staff-pin" maxlength="4" class="w-32 text-center text-3xl font-bold tracking-widest py-2 border-b-2 border-slate-200 focus:border-indigo-600 outline-none transition-colors" placeholder="••••">
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Select System</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="sys-btn-retail" onclick="selectLoginSystem('retail')" class="sys-sel-btn px-3 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold text-sm transition-colors hover:border-indigo-300 flex items-center gap-2 justify-center">
+                                <i data-lucide="shopping-bag" class="w-4 h-4"></i> Retail
+                            </button>
+                            <button id="sys-btn-hospital" onclick="selectLoginSystem('hospital')" class="sys-sel-btn px-3 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold text-sm transition-colors hover:border-indigo-300 flex items-center gap-2 justify-center">
+                                <i data-lucide="heart-pulse" class="w-4 h-4"></i> Hospital
+                            </button>
+                            <button id="sys-btn-bank" onclick="selectLoginSystem('bank')" class="sys-sel-btn px-3 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold text-sm transition-colors hover:border-indigo-300 flex items-center gap-2 justify-center">
+                                <i data-lucide="landmark" class="w-4 h-4"></i> Bank
+                            </button>
+                            <button id="sys-btn-tech" onclick="selectLoginSystem('tech')" class="sys-sel-btn px-3 py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold text-sm transition-colors hover:border-indigo-300 flex items-center gap-2 justify-center">
+                                <i data-lucide="monitor" class="w-4 h-4"></i> Tech Support
+                            </button>
+                        </div>
                     </div>
                     
                     <button onclick="checkStaffLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all">
@@ -206,7 +240,7 @@
                 
                 <!-- Queue List Column -->
                 <div class="flex-1 h-full flex flex-col p-6 overflow-hidden">
-                    <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="grid grid-cols-4 gap-3 mb-6">
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                             <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Waiting</div>
                             <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="staff-waiting-count">0</div>
@@ -215,9 +249,13 @@
                             <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Served</div>
                             <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" id="staff-served-count">0</div>
                         </div>
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-200 dark:border-indigo-700 shadow-sm">
+                            <div class="text-xs text-indigo-400 font-bold uppercase tracking-wider">System</div>
+                            <div class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-1 truncate" id="staff-system-label">Default</div>
+                        </div>
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-indigo-300 cursor-pointer transition-colors" onclick="openSettingsModal()">
                             <div class="flex justify-between items-start">
-                                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">System</div>
+                                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Config</div>
                                 <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i>
                             </div>
                             <div class="text-lg font-bold text-slate-700 dark:text-slate-200 mt-1 truncate" id="staff-business-label">Config</div>

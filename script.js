@@ -221,7 +221,7 @@ function toggleAudio() {
 lucide.createIcons();
 let timerInterval;
 
-// PRESETS CONFIG
+// PRESETS CONFIG — each is an independent system
 const PRESETS = {
     retail: { name: "City Mall Store", services: ["Sales", "Returns", "Click & Collect"] },
     hospital: { name: "General Hospital", services: ["Check-up", "Emergency", "Lab Test", "Pharmacy"] },
@@ -229,8 +229,12 @@ const PRESETS = {
     tech: { name: "Tech Support", services: ["Hardware Fix", "Software Issue", "Warranty Claim"] }
 };
 
+// --- Per-system state ---
+let activeSystemKey = localStorage.getItem('digitalq-system-key') || 'default';
+let currentSystemRef = null;
+
 let state = {
-    queue: [], 
+    queue: [],
     currentTicket: null,
     lastTicketNumber: 0,
     stats: { totalServed: 0, totalWaitTime: 0 },
@@ -240,35 +244,70 @@ let state = {
     }
 };
 
-// Ensure stats object and properties exist with defaults
 function ensureStats() {
     if (!state.stats) state.stats = {};
     if (typeof state.stats.totalServed !== 'number') state.stats.totalServed = 0;
     if (typeof state.stats.totalWaitTime !== 'number') state.stats.totalWaitTime = 0;
 }
 
+// Switch active system — detach old listener, point to new Firebase path, reload
+function switchSystem(systemKey) {
+    if (stateListener && currentSystemRef) {
+        currentSystemRef.off('value', stateListener);
+        stateListener = null;
+    }
+    activeSystemKey = systemKey;
+    localStorage.setItem('digitalq-system-key', systemKey);
+    currentSystemRef = db.ref('systems/' + systemKey);
+
+    // Reset local state with preset defaults if available
+    const preset = PRESETS[systemKey];
+    state = {
+        queue: [],
+        currentTicket: null,
+        lastTicketNumber: 0,
+        stats: { totalServed: 0, totalWaitTime: 0 },
+        settings: {
+            businessName: preset ? preset.name : "DigitalQ",
+            services: preset ? [...preset.services] : ["Sales", "Support", "Inquiry"]
+        }
+    };
+    loadState();
+}
+
+// Load available systems index for department picker
+function loadSystemsIndex(callback) {
+    db.ref('systemsIndex').once('value', (snap) => {
+        const data = snap.val() || {};
+        callback(data);
+    });
+}
+
+// Save system name to index so department picker can discover it
+function updateSystemsIndex() {
+    db.ref('systemsIndex/' + activeSystemKey).set(state.settings.businessName);
+}
+
 let stateListener = null;
 
 function loadState() {
-    // Detach previous listener if one exists
-    if (stateListener) {
-        stateRef.off('value', stateListener);
+    if (stateListener && currentSystemRef) {
+        currentSystemRef.off('value', stateListener);
+    }
+    if (!currentSystemRef) {
+        currentSystemRef = db.ref('systems/' + activeSystemKey);
     }
 
-    // Listen for real-time updates from Firebase
-    stateListener = stateRef.on('value', (snapshot) => {
+    stateListener = currentSystemRef.on('value', (snapshot) => {
         const saved = snapshot.val();
         if (saved) {
             state = { ...state, ...saved };
 
-            // Ensure queue is always an array (Firebase may omit empty arrays or return objects)
             if (!Array.isArray(state.queue)) {
                 state.queue = state.queue ? Object.values(state.queue) : [];
             }
-            // Filter out null/undefined entries (Firebase sparse arrays)
             state.queue = state.queue.filter(q => q != null);
 
-            // Fix Dates
             state.queue.forEach(q => {
                 q.joinedAt = new Date(q.joinedAt);
                 if (q.servedAt) q.servedAt = new Date(q.servedAt);
@@ -280,19 +319,21 @@ function loadState() {
         }
         ensureStats();
         render();
-        // Re-render customer join form if services changed
         renderCustomerJoin();
     });
 }
 
 function saveState() {
     ensureStats();
-    // Convert state to a plain object safe for Firebase (Dates become ISO strings)
+    if (!currentSystemRef) {
+        currentSystemRef = db.ref('systems/' + activeSystemKey);
+    }
     const payload = JSON.parse(JSON.stringify(state));
-    stateRef.set(payload).catch((error) => {
+    currentSystemRef.set(payload).catch((error) => {
         console.error('Failed to save state to Firebase:', error);
         showToast('Error saving data. Check your connection.');
     });
+    updateSystemsIndex();
     render();
 }
 
@@ -319,6 +360,21 @@ function switchView(view) {
 }
 
 // --- STAFF LOGIN LOGIC ---
+let selectedLoginSystem = localStorage.getItem('digitalq-system-key') || 'default';
+
+function selectLoginSystem(key) {
+    selectedLoginSystem = key;
+    document.querySelectorAll('.sys-sel-btn').forEach(b => {
+        b.classList.remove('border-indigo-500', 'bg-indigo-50', 'text-indigo-700');
+        b.classList.add('border-slate-200', 'text-slate-600');
+    });
+    const btn = document.getElementById('sys-btn-' + key);
+    if (btn) {
+        btn.classList.remove('border-slate-200', 'text-slate-600');
+        btn.classList.add('border-indigo-500', 'bg-indigo-50', 'text-indigo-700');
+    }
+}
+
 function checkStaffLogin() {
     const staffPinInput = document.getElementById('staff-pin');
     if (!staffPinInput) return;
@@ -330,6 +386,8 @@ function checkStaffLogin() {
             screen.classList.add('opacity-0', 'pointer-events-none');
             setTimeout(() => screen.classList.add('hidden'), 500);
         }
+        // Switch to selected system
+        switchSystem(selectedLoginSystem);
     } else {
         const input = document.getElementById('staff-pin');
         if (input) {
@@ -363,6 +421,9 @@ function loadPreset(type) {
     
     if (settingBizName) settingBizName.value = p.name;
     if (settingServices) settingServices.value = p.services.join(', ');
+    
+    // Store which preset key to switch to on save
+    document.getElementById('settings-modal').dataset.presetKey = type;
 }
 function saveSettings() {
     const nameInput = document.getElementById('setting-biz-name');
@@ -379,11 +440,30 @@ function saveSettings() {
         return;
     }
 
-    state.settings = { businessName: name, services: services };
-    saveState();
-    closeSettingsModal();
-    renderCustomerJoin();
-    showToast("System Configuration Updated");
+    // Check if a preset was loaded — switch system to that preset key
+    const modal = document.getElementById('settings-modal');
+    const presetKey = modal.dataset.presetKey || null;
+    
+    if (presetKey && presetKey !== activeSystemKey) {
+        // Switch to the new system, then apply settings
+        switchSystem(presetKey);
+        // Wait for loadState to fire, then update settings
+        setTimeout(() => {
+            state.settings = { businessName: name, services: services };
+            saveState();
+            closeSettingsModal();
+            renderCustomerJoin();
+            showToast("Switched to " + name);
+        }, 500);
+    } else {
+        state.settings = { businessName: name, services: services };
+        saveState();
+        closeSettingsModal();
+        renderCustomerJoin();
+        showToast("System Configuration Updated");
+    }
+    // Clear preset key
+    delete modal.dataset.presetKey;
 }
 
 // --- CUSTOMER LOGIC ---
@@ -436,6 +516,89 @@ function selectService(type, btnElement) {
     });
     btnElement.classList.remove('bg-white', 'dark:bg-slate-700');
     btnElement.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+}
+
+// --- Customer Department Picker ---
+function renderDepartmentPicker() {
+    const container = document.getElementById('dept-picker-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // Show all presets as department options
+    Object.keys(PRESETS).forEach(key => {
+        const p = PRESETS[key];
+        const icons = { retail: 'shopping-bag', hospital: 'heart-pulse', bank: 'landmark', tech: 'monitor' };
+        const btn = document.createElement('button');
+        btn.className = 'dept-btn p-5 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-2xl hover:border-indigo-500 hover:shadow-lg text-left transition-all group';
+        btn.onclick = () => selectDepartment(key);
+
+        const inner = document.createElement('div');
+        inner.className = 'flex items-center gap-3';
+
+        const iconWrap = document.createElement('div');
+        iconWrap.className = 'w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center';
+        iconWrap.innerHTML = '<i data-lucide="' + (icons[key] || 'layers') + '" class="w-5 h-5"></i>';
+
+        const textWrap = document.createElement('div');
+        const nameEl = document.createElement('div');
+        nameEl.className = 'font-bold text-slate-800 dark:text-slate-200';
+        nameEl.textContent = p.name;
+        const svcEl = document.createElement('div');
+        svcEl.className = 'text-xs text-slate-400';
+        svcEl.textContent = p.services.join(', ');
+        textWrap.appendChild(nameEl);
+        textWrap.appendChild(svcEl);
+
+        inner.appendChild(iconWrap);
+        inner.appendChild(textWrap);
+        btn.appendChild(inner);
+        container.appendChild(btn);
+    });
+
+    // Also load any custom systems from Firebase
+    loadSystemsIndex((index) => {
+        Object.keys(index).forEach(key => {
+            if (PRESETS[key]) return; // skip presets already shown
+            const name = index[key];
+            const btn = document.createElement('button');
+            btn.className = 'dept-btn p-5 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-2xl hover:border-indigo-500 hover:shadow-lg text-left transition-all group';
+            btn.onclick = () => selectDepartment(key);
+
+            const inner = document.createElement('div');
+            inner.className = 'flex items-center gap-3';
+            const iconWrap = document.createElement('div');
+            iconWrap.className = 'w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-600 text-slate-600 flex items-center justify-center';
+            iconWrap.innerHTML = '<i data-lucide="layers" class="w-5 h-5"></i>';
+            const textWrap = document.createElement('div');
+            const nameEl = document.createElement('div');
+            nameEl.className = 'font-bold text-slate-800 dark:text-slate-200';
+            nameEl.textContent = name;
+            textWrap.appendChild(nameEl);
+            inner.appendChild(iconWrap);
+            inner.appendChild(textWrap);
+            btn.appendChild(inner);
+            container.appendChild(btn);
+        });
+        lucide.createIcons();
+    });
+    lucide.createIcons();
+}
+
+function selectDepartment(systemKey) {
+    switchSystem(systemKey);
+    // Hide department picker, show join form
+    const picker = document.getElementById('customer-dept-picker');
+    const join = document.getElementById('customer-join');
+    if (picker) picker.classList.add('hidden');
+    if (join) join.classList.remove('hidden');
+    renderCustomerJoin();
+}
+
+function backToDeptPicker() {
+    const picker = document.getElementById('customer-dept-picker');
+    const join = document.getElementById('customer-join');
+    if (picker) picker.classList.remove('hidden');
+    if (join) join.classList.add('hidden');
 }
 
 function joinQueue() {
@@ -665,8 +828,7 @@ function callSpecific(ticketId) {
 }
 
 function resetSystem() {
-    if(confirm("Factory Reset: Clear all data?")) {
-        // Preserve settings, clear data
+    if(confirm("Reset this system's data? (Queue & stats for " + state.settings.businessName + ")")) {
         const savedSettings = state.settings;
         state = { 
             queue: [], 
@@ -757,8 +919,10 @@ function render() {
     
     const staffWaitingCount = document.getElementById('staff-waiting-count');
     const staffServedCount = document.getElementById('staff-served-count');
+    const staffSystemLabel = document.getElementById('staff-system-label');
     if (staffWaitingCount) staffWaitingCount.textContent = waitingCount;
     if (staffServedCount) staffServedCount.textContent = state.stats.totalServed;
+    if (staffSystemLabel) staffSystemLabel.textContent = activeSystemKey.charAt(0).toUpperCase() + activeSystemKey.slice(1);
 
     // Staff Current
     if (state.currentTicket) {
@@ -886,6 +1050,9 @@ function showToast(msg) {
 
 loadState();
 switchView('customer');
+
+// Populate customer department picker on load
+renderDepartmentPicker();
 
 // Refresh staff queue wait times every second
 let staffTimerInterval = setInterval(function() {

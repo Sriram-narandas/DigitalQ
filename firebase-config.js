@@ -13,6 +13,7 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Database reference for the queue state
+// Database reference
 const db = firebase.database();
+// Legacy single-queue ref (kept for migration)
 const stateRef = db.ref('queueState');
