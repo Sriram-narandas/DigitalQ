@@ -1,3 +1,73 @@
+// --- Dark Mode ---
+function initDarkMode() {
+    const saved = localStorage.getItem('digitalq-dark-mode');
+    if (saved === 'true' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    }
+}
+
+function toggleDarkMode() {
+    document.documentElement.classList.toggle('dark');
+    const isDark = document.documentElement.classList.contains('dark');
+    localStorage.setItem('digitalq-dark-mode', isDark);
+    lucide.createIcons();
+}
+
+initDarkMode();
+
+// --- QR Code ---
+let qrGenerated = false;
+
+function showQRModal() {
+    const modal = document.getElementById('qr-modal');
+    if (modal) modal.classList.remove('hidden');
+    if (!qrGenerated) {
+        const container = document.getElementById('qr-code-container');
+        const urlDisplay = document.getElementById('qr-url-display');
+        if (container) {
+            container.innerHTML = '';
+            const pageUrl = window.location.href.split('?')[0];
+            new QRCode(container, {
+                text: pageUrl,
+                width: 200,
+                height: 200,
+                colorDark: '#1e293b',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            if (urlDisplay) urlDisplay.textContent = pageUrl;
+            qrGenerated = true;
+        }
+    }
+    lucide.createIcons();
+}
+
+function closeQRModal() {
+    const modal = document.getElementById('qr-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function printQRCode() {
+    const container = document.getElementById('qr-code-container');
+    const qrImg = container ? container.querySelector('img') : null;
+    const canvas = container ? container.querySelector('canvas') : null;
+    const imgSrc = qrImg ? qrImg.src : (canvas ? canvas.toDataURL() : null);
+    if (!imgSrc) return;
+
+    const bizName = state.settings.businessName || 'DigitalQ';
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>QR Code - ${bizName}</title>
+        <style>body{font-family:Arial,sans-serif;text-align:center;padding:40px;}
+        h1{font-size:28px;margin-bottom:8px;} p{color:#666;font-size:14px;margin-bottom:24px;}
+        img{width:250px;height:250px;} .url{font-size:10px;color:#999;margin-top:16px;word-break:break-all;}
+        @media print{body{padding:20px;}}</style></head>
+        <body><h1>${bizName}</h1><p>Scan to join the queue</p>
+        <img src="${imgSrc}" alt="QR Code">
+        <p class="url">${window.location.href.split('?')[0]}</p></body></html>`);
+    printWindow.document.close();
+    printWindow.onload = function() { printWindow.print(); };
+}
+
 // --- Web Audio API Context ---
 let audioCtx;
 let audioEnabled = true;
@@ -132,8 +202,8 @@ function switchView(view) {
     document.getElementById('view-customer').classList.add('hidden');
     document.getElementById('view-staff').classList.add('hidden');
     
-    const inactive = "px-5 py-2 rounded-lg text-sm font-semibold transition-all text-slate-500 hover:text-slate-700";
-    const active = "px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-indigo-600";
+    const inactive = "px-5 py-2 rounded-lg text-sm font-semibold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white";
+    const active = "px-5 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300";
     
     document.getElementById('btn-customer').className = inactive;
     document.getElementById('btn-staff').className = inactive;
@@ -234,7 +304,7 @@ function renderCustomerJoin() {
 
     state.settings.services.forEach(svc => {
         const btn = document.createElement('button');
-        btn.className = "service-opt p-4 border border-slate-200 bg-white rounded-2xl hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10 text-left transition-all group relative overflow-hidden";
+        btn.className = "service-opt p-4 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-2xl hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10 text-left transition-all group relative overflow-hidden";
         btn.onclick = () => selectService(svc, btn);
         
         const bgOverlay = document.createElement('div');
@@ -244,7 +314,7 @@ function renderCustomerJoin() {
         contentDiv.className = "relative z-10 flex items-center justify-between";
         
         const textSpan = document.createElement('span');
-        textSpan.className = "text-sm font-bold text-slate-800";
+        textSpan.className = "text-sm font-bold text-slate-800 dark:text-slate-200";
         textSpan.textContent = svc;
         
         const iconDiv = document.createElement('div');
@@ -263,11 +333,11 @@ function renderCustomerJoin() {
 function selectService(type, btnElement) {
     document.getElementById('cust-service').value = type;
     document.querySelectorAll('.service-opt').forEach(b => {
-        b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50');
-        b.classList.add('bg-white');
+        b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+        b.classList.add('bg-white', 'dark:bg-slate-700');
     });
-    btnElement.classList.remove('bg-white');
-    btnElement.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+    btnElement.classList.remove('bg-white', 'dark:bg-slate-700');
+    btnElement.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
 }
 
 function joinQueue() {
@@ -336,8 +406,8 @@ function leaveQueue() {
     if (nameInput) nameInput.value = '';
     
     document.querySelectorAll('.service-opt').forEach(b => {
-        b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50');
-        b.classList.add('bg-white');
+        b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+        b.classList.add('bg-white', 'dark:bg-slate-700');
     });
     
     const joinView = document.getElementById('customer-join');
@@ -536,7 +606,7 @@ function render() {
                 
                 // Create elements safely without XSS vulnerability
                 const itemDiv = document.createElement('div');
-                itemDiv.className = `flex items-center p-3 rounded-xl border ${isServing ? 'bg-indigo-50 border-indigo-200 shadow-inner' : 'bg-white border-slate-100 hover:border-slate-300'} transition-all`;
+                itemDiv.className = `flex items-center p-3 rounded-xl border ${isServing ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 shadow-inner' : 'bg-white dark:bg-slate-700 border-slate-100 dark:border-slate-600 hover:border-slate-300'} transition-all`;
                 
                 const ticketDiv = document.createElement('div');
                 ticketDiv.className = `w-24 font-mono font-bold text-lg ${isServing ? 'text-indigo-600' : 'text-slate-600'}`;
@@ -545,10 +615,10 @@ function render() {
                 const detailsDiv = document.createElement('div');
                 detailsDiv.className = 'flex-1 min-w-0';
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'text-sm font-bold text-slate-800 truncate';
+                nameDiv.className = 'text-sm font-bold text-slate-800 dark:text-slate-200 truncate';
                 nameDiv.textContent = q.name;
                 const serviceDiv = document.createElement('div');
-                serviceDiv.className = 'text-xs text-slate-500 capitalize flex items-center gap-1.5';
+                serviceDiv.className = 'text-xs text-slate-500 dark:text-slate-400 capitalize flex items-center gap-1.5';
                 serviceDiv.textContent = q.service + ' • ' + waitMins + 'm wait';
                 detailsDiv.appendChild(nameDiv);
                 detailsDiv.appendChild(serviceDiv);
@@ -596,7 +666,7 @@ function showToast(msg) {
         logo.style.transition = 'opacity 300ms';
         logo.style.opacity = '0';
         setTimeout(()=>{
-            logo.innerHTML = 'Digital<span class="text-indigo-600">Q</span>';
+            logo.innerHTML = 'Digital<span class="text-indigo-600 dark:text-indigo-400">Q</span>';
             document.title = document.title.replace('Q-Flow','DigitalQ');
             if(window.state && state.settings) state.settings.businessName = state.settings.businessName.replace('Q-Flow','DigitalQ');
             logo.style.opacity = '1';
