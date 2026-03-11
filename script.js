@@ -89,12 +89,16 @@ function recomputeStats() {
     state.stats.totalWaitTime = totalWaitTime;
 }
 
+let stateListener = null;
+
 function loadState() {
-    // Detach any existing listener before attaching a new one
-    stateRef.off('value');
+    // Detach previous listener if one exists
+    if (stateListener) {
+        stateRef.off('value', stateListener);
+    }
 
     // Listen for real-time updates from Firebase
-    stateRef.on('value', (snapshot) => {
+    stateListener = stateRef.on('value', (snapshot) => {
         const saved = snapshot.val();
         if (saved) {
             state = { ...state, ...saved };
@@ -125,7 +129,10 @@ function saveState() {
     recomputeStats();
     // Convert state to a plain object safe for Firebase (Dates become ISO strings)
     const payload = JSON.parse(JSON.stringify(state));
-    stateRef.set(payload);
+    stateRef.set(payload).catch((error) => {
+        console.error('Failed to save state to Firebase:', error);
+        showToast('Error saving data. Check your connection.');
+    });
     render();
 }
 

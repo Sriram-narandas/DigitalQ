@@ -59,7 +59,7 @@ This project uses **Firebase Realtime Database** to persist queue data. Follow t
    };
    ```
 5. In the Firebase Console, go to **Realtime Database** > **Create Database**.
-6. Set the database rules for development (update for production):
+6. Set the database rules for development (**⚠️ these rules allow public access — restrict them before deploying to production**):
    ```json
    {
      "rules": {
