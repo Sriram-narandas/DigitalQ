@@ -72,11 +72,11 @@ let state = {
     }
 };
 
-// Ensure stats object exists
+// Ensure stats object and properties exist with defaults
 function ensureStats() {
-    if (!state.stats) {
-        state.stats = { totalServed: 0, totalWaitTime: 0 };
-    }
+    if (!state.stats) state.stats = {};
+    if (typeof state.stats.totalServed !== 'number') state.stats.totalServed = 0;
+    if (typeof state.stats.totalWaitTime !== 'number') state.stats.totalWaitTime = 0;
 }
 
 let stateListener = null;
@@ -93,8 +93,12 @@ function loadState() {
         if (saved) {
             state = { ...state, ...saved };
 
-            // Ensure queue is always an array (Firebase may omit empty arrays)
-            if (!Array.isArray(state.queue)) state.queue = [];
+            // Ensure queue is always an array (Firebase may omit empty arrays or return objects)
+            if (!Array.isArray(state.queue)) {
+                state.queue = state.queue ? Object.values(state.queue) : [];
+            }
+            // Filter out null/undefined entries (Firebase sparse arrays)
+            state.queue = state.queue.filter(q => q != null);
 
             // Fix Dates
             state.queue.forEach(q => {
@@ -344,15 +348,23 @@ function leaveQueue() {
 
 // --- STAFF LOGIC ---
 function callNext() {
-    // Complete previous ticket if any
+    // Complete previous ticket if any (without saving yet to avoid double write)
     if (state.currentTicket) {
         const oldIdx = state.queue.findIndex(q => q.id === state.currentTicket.id);
-        if (oldIdx !== -1 && state.queue[oldIdx].status === 'serving') completeCurrent();
+        if (oldIdx !== -1 && state.queue[oldIdx].status === 'serving') {
+            const item = state.queue[oldIdx];
+            if (!item.servedAt) item.servedAt = new Date();
+            state.stats.totalServed++;
+            const waitMins = (new Date(item.servedAt) - new Date(item.joinedAt)) / 60000;
+            if (!isNaN(waitMins) && waitMins > 0) state.stats.totalWaitTime += waitMins;
+            state.queue.splice(oldIdx, 1);
+            state.currentTicket = null;
+        }
     }
     
     // Find next waiting customer AFTER completing previous
     const nextIdx = state.queue.findIndex(q => q.status === 'waiting');
-    if (nextIdx === -1) { showToast("Queue is empty!"); return; }
+    if (nextIdx === -1) { saveState(); showToast("Queue is empty!"); return; }
     
     const counterNum = Math.ceil(Math.random() * 3);
     state.queue[nextIdx].status = 'serving';
@@ -584,7 +596,7 @@ function showToast(msg) {
         logo.style.transition = 'opacity 300ms';
         logo.style.opacity = '0';
         setTimeout(()=>{
-            logo.textContent = 'DigitalQ';
+            logo.innerHTML = 'Digital<span class="text-indigo-600">Q</span>';
             document.title = document.title.replace('Q-Flow','DigitalQ');
             if(window.state && state.settings) state.settings.businessName = state.settings.businessName.replace('Q-Flow','DigitalQ');
             logo.style.opacity = '1';
