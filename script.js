@@ -524,59 +524,58 @@ function renderDepartmentPicker() {
     if (!container) return;
     container.innerHTML = '';
 
-    // Show all presets as department options
+    const deptStyles = {
+        retail:   { icon: 'shopping-bag', gradient: 'from-orange-400 to-pink-500',   shadow: 'shadow-orange-500/25', bg: 'bg-orange-50 dark:bg-orange-900/20',  border: 'hover:border-orange-300' },
+        hospital: { icon: 'heart-pulse',  gradient: 'from-rose-400 to-red-500',      shadow: 'shadow-rose-500/25',   bg: 'bg-rose-50 dark:bg-rose-900/20',    border: 'hover:border-rose-300' },
+        bank:     { icon: 'landmark',     gradient: 'from-emerald-400 to-teal-500',  shadow: 'shadow-emerald-500/25',bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'hover:border-emerald-300' },
+        tech:     { icon: 'monitor',      gradient: 'from-blue-400 to-indigo-500',   shadow: 'shadow-blue-500/25',   bg: 'bg-blue-50 dark:bg-blue-900/20',    border: 'hover:border-blue-300' }
+    };
+
     Object.keys(PRESETS).forEach(key => {
         const p = PRESETS[key];
-        const icons = { retail: 'shopping-bag', hospital: 'heart-pulse', bank: 'landmark', tech: 'monitor' };
+        const s = deptStyles[key] || { icon: 'layers', gradient: 'from-slate-400 to-slate-500', shadow: 'shadow-slate-500/25', bg: 'bg-slate-50', border: 'hover:border-slate-300' };
+
         const btn = document.createElement('button');
-        btn.className = 'dept-btn p-5 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-2xl hover:border-indigo-500 hover:shadow-lg text-left transition-all group';
+        btn.className = `dept-btn flex flex-col items-center p-5 border-2 border-slate-100 dark:border-slate-700 ${s.bg} rounded-3xl ${s.border} hover:shadow-xl hover:-translate-y-1 text-center transition-all duration-300 group`;
         btn.onclick = () => selectDepartment(key);
 
-        const inner = document.createElement('div');
-        inner.className = 'flex items-center gap-3';
-
         const iconWrap = document.createElement('div');
-        iconWrap.className = 'w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center';
-        iconWrap.innerHTML = '<i data-lucide="' + (icons[key] || 'layers') + '" class="w-5 h-5"></i>';
+        iconWrap.className = `w-14 h-14 rounded-2xl bg-gradient-to-br ${s.gradient} ${s.shadow} shadow-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300`;
+        iconWrap.innerHTML = '<i data-lucide="' + s.icon + '" class="w-6 h-6 text-white"></i>';
 
-        const textWrap = document.createElement('div');
         const nameEl = document.createElement('div');
-        nameEl.className = 'font-bold text-slate-800 dark:text-slate-200';
+        nameEl.className = 'font-bold text-sm text-slate-800 dark:text-slate-200 mb-1 leading-tight';
         nameEl.textContent = p.name;
-        const svcEl = document.createElement('div');
-        svcEl.className = 'text-xs text-slate-400';
-        svcEl.textContent = p.services.join(', ');
-        textWrap.appendChild(nameEl);
-        textWrap.appendChild(svcEl);
 
-        inner.appendChild(iconWrap);
-        inner.appendChild(textWrap);
-        btn.appendChild(inner);
+        const svcEl = document.createElement('div');
+        svcEl.className = 'text-[10px] text-slate-400 dark:text-slate-500 leading-snug';
+        svcEl.textContent = p.services.length + ' services';
+
+        btn.appendChild(iconWrap);
+        btn.appendChild(nameEl);
+        btn.appendChild(svcEl);
         container.appendChild(btn);
     });
 
     // Also load any custom systems from Firebase
     loadSystemsIndex((index) => {
         Object.keys(index).forEach(key => {
-            if (PRESETS[key]) return; // skip presets already shown
+            if (PRESETS[key]) return;
             const name = index[key];
             const btn = document.createElement('button');
-            btn.className = 'dept-btn p-5 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-2xl hover:border-indigo-500 hover:shadow-lg text-left transition-all group';
+            btn.className = 'dept-btn flex flex-col items-center p-5 border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-3xl hover:border-indigo-300 hover:shadow-xl hover:-translate-y-1 text-center transition-all duration-300 group';
             btn.onclick = () => selectDepartment(key);
 
-            const inner = document.createElement('div');
-            inner.className = 'flex items-center gap-3';
             const iconWrap = document.createElement('div');
-            iconWrap.className = 'w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-600 text-slate-600 flex items-center justify-center';
-            iconWrap.innerHTML = '<i data-lucide="layers" class="w-5 h-5"></i>';
-            const textWrap = document.createElement('div');
+            iconWrap.className = 'w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-500 shadow-lg shadow-slate-500/25 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300';
+            iconWrap.innerHTML = '<i data-lucide="layers" class="w-6 h-6 text-white"></i>';
+
             const nameEl = document.createElement('div');
-            nameEl.className = 'font-bold text-slate-800 dark:text-slate-200';
+            nameEl.className = 'font-bold text-sm text-slate-800 dark:text-slate-200 mb-1';
             nameEl.textContent = name;
-            textWrap.appendChild(nameEl);
-            inner.appendChild(iconWrap);
-            inner.appendChild(textWrap);
-            btn.appendChild(inner);
+
+            btn.appendChild(iconWrap);
+            btn.appendChild(nameEl);
             container.appendChild(btn);
         });
         lucide.createIcons();
