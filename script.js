@@ -380,11 +380,11 @@ function completeCurrent() {
     const idx = state.queue.findIndex(q => q.id === state.currentTicket.id);
     if (idx !== -1) {
         const item = state.queue[idx];
-        // Ensure servedAt exists for stats computation
         if (!item.servedAt) item.servedAt = new Date();
-        item.status = 'completed';
-        // Recompute stats before removing
-        recomputeStats();
+        // Increment served count and accumulate wait time
+        state.stats.totalServed++;
+        const waitMins = (new Date(item.servedAt) - new Date(item.joinedAt)) / 60000;
+        if (!isNaN(waitMins) && waitMins > 0) state.stats.totalWaitTime += waitMins;
         // Remove completed ticket from queue (deletes from database)
         state.queue.splice(idx, 1);
         state.currentTicket = null;
