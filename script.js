@@ -51,7 +51,6 @@ function toggleAudio() {
 
 // --- Logic ---
 lucide.createIcons();
-const STORE_KEY = 'qflow_v3_data';
 let timerInterval;
 
 // PRESETS CONFIG
@@ -90,36 +89,51 @@ function recomputeStats() {
     state.stats.totalWaitTime = totalWaitTime;
 }
 
+let stateListener = null;
+
 function loadState() {
-    const saved = localStorage.getItem(STORE_KEY);
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        // Merge logic to keep settings if they exist
-        state = { ...state, ...parsed };
-        
-        // Fix Dates
-        state.queue.forEach(q => {
-            q.joinedAt = new Date(q.joinedAt);
-            if(q.servedAt) q.servedAt = new Date(q.servedAt);
-        });
-        if(state.currentTicket) {
-            state.currentTicket.joinedAt = new Date(state.currentTicket.joinedAt);
-            if(state.currentTicket.servedAt) state.currentTicket.servedAt = new Date(state.currentTicket.servedAt);
-        }
+    // Detach previous listener if one exists
+    if (stateListener) {
+        stateRef.off('value', stateListener);
     }
-    // Recompute stats in case persisted data and stats drifted
-    recomputeStats();
-    render();
-    // Re-render customer join form if services changed
-    renderCustomerJoin();
+
+    // Listen for real-time updates from Firebase
+    stateListener = stateRef.on('value', (snapshot) => {
+        const saved = snapshot.val();
+        if (saved) {
+            state = { ...state, ...saved };
+
+            // Ensure queue is always an array (Firebase may omit empty arrays)
+            if (!Array.isArray(state.queue)) state.queue = [];
+
+            // Fix Dates
+            state.queue.forEach(q => {
+                q.joinedAt = new Date(q.joinedAt);
+                if (q.servedAt) q.servedAt = new Date(q.servedAt);
+            });
+            if (state.currentTicket) {
+                state.currentTicket.joinedAt = new Date(state.currentTicket.joinedAt);
+                if (state.currentTicket.servedAt) state.currentTicket.servedAt = new Date(state.currentTicket.servedAt);
+            }
+        }
+        // Recompute stats in case persisted data and stats drifted
+        recomputeStats();
+        render();
+        // Re-render customer join form if services changed
+        renderCustomerJoin();
+    });
 }
 
 function saveState() {
     // Ensure stats reflect current queue before saving
     recomputeStats();
-    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    // Convert state to a plain object safe for Firebase (Dates become ISO strings)
+    const payload = JSON.parse(JSON.stringify(state));
+    stateRef.set(payload).catch((error) => {
+        console.error('Failed to save state to Firebase:', error);
+        showToast('Error saving data. Check your connection.');
+    });
     render();
-    window.dispatchEvent(new Event('storage'));
 }
 
 function switchView(view) {
@@ -590,7 +604,6 @@ function showToast(msg) {
     }, 1200);
 })();
 
-window.addEventListener('storage', loadState);
 loadState();
 switchView('customer');
 setInterval(render, 30000);
