@@ -380,14 +380,16 @@ function completeCurrent() {
     const idx = state.queue.findIndex(q => q.id === state.currentTicket.id);
     if (idx !== -1) {
         const item = state.queue[idx];
-        item.status = 'completed';
-        // Ensure servedAt exists
+        // Ensure servedAt exists for stats computation
         if (!item.servedAt) item.servedAt = new Date();
-        // Recompute stats to be authoritative
+        item.status = 'completed';
+        // Recompute stats before removing
         recomputeStats();
+        // Remove completed ticket from queue (deletes from database)
+        state.queue.splice(idx, 1);
         state.currentTicket = null;
         saveState();
-        showToast("Ticket Completed");
+        showToast("Ticket Completed & Removed");
     }
 }
 
@@ -395,12 +397,12 @@ function markNoShow() {
     if (!state.currentTicket) return;
     const idx = state.queue.findIndex(q => q.id === state.currentTicket.id);
     if (idx !== -1) {
-        state.queue[idx].status = 'noshow';
+        // Remove no-show ticket from queue (deletes from database)
+        state.queue.splice(idx, 1);
         state.currentTicket = null;
-        // Recompute stats (noshow shouldn't increment served)
         recomputeStats();
         saveState();
-        showToast("Marked No Show");
+        showToast("Marked No Show & Removed");
     }
 }
 
