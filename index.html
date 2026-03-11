@@ -131,6 +131,15 @@
                                 </div>
                             </div>
 
+                            <!-- Completed Panel -->
+                            <div id="completed-info-panel" class="hidden text-center mb-8 animate-pop">
+                                <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i data-lucide="check-circle" class="w-8 h-8 text-emerald-500"></i>
+                                </div>
+                                <div class="text-lg font-bold text-slate-800 dark:text-white mb-1">Service Completed</div>
+                                <p class="text-slate-500 dark:text-slate-400 text-sm">Thank you for visiting!</p>
+                            </div>
+
                             <!-- Waiting Panel -->
                             <div id="waiting-info-panel" class="grid grid-cols-2 gap-4 mb-8">
                                 <div class="text-center p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl border border-slate-100 dark:border-slate-600">
@@ -151,8 +160,11 @@
                                 </div>
                             </div>
 
-                            <button onclick="leaveQueue()" class="w-full border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-semibold py-3 rounded-xl transition-all text-sm">
+                            <button onclick="leaveQueue()" id="btn-leave-queue" class="w-full border border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-semibold py-3 rounded-xl transition-all text-sm">
                                 Leave Queue
+                            </button>
+                            <button onclick="backToJoin()" id="btn-back-to-join" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all text-sm">
+                                Join Again
                             </button>
                         </div>
                     </div>

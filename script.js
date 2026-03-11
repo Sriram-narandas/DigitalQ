@@ -399,11 +399,74 @@ function leaveQueue() {
     if (myTicketId) {
         state.queue = state.queue.filter(q => q.id !== myTicketId);
         myTicketId = null;
+        previousStatus = null;
         saveState();
     }
     
     const nameInput = document.getElementById('cust-name');
     if (nameInput) nameInput.value = '';
+    const custService = document.getElementById('cust-service');
+    if (custService) custService.value = '';
+    
+    document.querySelectorAll('.service-opt').forEach(b => {
+        b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+        b.classList.add('bg-white', 'dark:bg-slate-700');
+    });
+    
+    const joinView = document.getElementById('customer-join');
+    const ticketView = document.getElementById('customer-ticket');
+    if (joinView) joinView.classList.remove('hidden');
+    if (ticketView) ticketView.classList.add('hidden');
+}
+
+function showCompletedScreen() {
+    if(timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    // Clear ticket so this doesn't re-fire on every render cycle
+    myTicketId = null;
+    previousStatus = null;
+    
+    const header = document.getElementById('ticket-header');
+    const statusTxt = document.getElementById('ticket-status-text');
+    const waitingPanel = document.getElementById('waiting-info-panel');
+    const servingPanel = document.getElementById('serving-info-panel');
+    const completedPanel = document.getElementById('completed-info-panel');
+    const btnLeave = document.getElementById('btn-leave-queue');
+    const btnBack = document.getElementById('btn-back-to-join');
+
+    if (header) header.className = "bg-emerald-600 p-8 text-center relative overflow-hidden transition-colors duration-500";
+    if (statusTxt) statusTxt.textContent = "Completed";
+    if (waitingPanel) waitingPanel.classList.add('hidden');
+    if (servingPanel) servingPanel.classList.add('hidden');
+    if (completedPanel) completedPanel.classList.remove('hidden');
+    if (btnLeave) btnLeave.classList.add('hidden');
+    if (btnBack) btnBack.classList.remove('hidden');
+    
+    const waitTimer = document.getElementById('wait-timer');
+    if (waitTimer) waitTimer.innerText = '';
+    
+    playChime();
+    lucide.createIcons();
+}
+
+function backToJoin() {
+    myTicketId = null;
+    previousStatus = null;
+    
+    const completedPanel = document.getElementById('completed-info-panel');
+    const btnLeave = document.getElementById('btn-leave-queue');
+    const btnBack = document.getElementById('btn-back-to-join');
+    if (completedPanel) completedPanel.classList.add('hidden');
+    if (btnLeave) btnLeave.classList.remove('hidden');
+    if (btnBack) btnBack.classList.add('hidden');
+    
+    const nameInput = document.getElementById('cust-name');
+    if (nameInput) nameInput.value = '';
+    const custService = document.getElementById('cust-service');
+    if (custService) custService.value = '';
     
     document.querySelectorAll('.service-opt').forEach(b => {
         b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
@@ -475,6 +538,34 @@ function markNoShow() {
     }
 }
 
+// Priority select: staff can pick any waiting customer to serve next
+function callSpecific(ticketId) {
+    // Complete previous ticket if any
+    if (state.currentTicket) {
+        const oldIdx = state.queue.findIndex(q => q.id === state.currentTicket.id);
+        if (oldIdx !== -1 && state.queue[oldIdx].status === 'serving') {
+            const item = state.queue[oldIdx];
+            if (!item.servedAt) item.servedAt = new Date();
+            state.stats.totalServed++;
+            const waitMins = (new Date(item.servedAt) - new Date(item.joinedAt)) / 60000;
+            if (!isNaN(waitMins) && waitMins > 0) state.stats.totalWaitTime += waitMins;
+            state.queue.splice(oldIdx, 1);
+            state.currentTicket = null;
+        }
+    }
+
+    const idx = state.queue.findIndex(q => q.id === ticketId && q.status === 'waiting');
+    if (idx === -1) { showToast("Customer not found or already serving"); return; }
+
+    const counterNum = Math.ceil(Math.random() * 3);
+    state.queue[idx].status = 'serving';
+    state.queue[idx].counter = counterNum;
+    state.queue[idx].servedAt = new Date();
+    state.currentTicket = state.queue[idx];
+    saveState();
+    showToast(`Priority: Calling ${state.currentTicket.ticket}`);
+}
+
 function resetSystem() {
     if(confirm("Factory Reset: Clear all data?")) {
         // Preserve settings, clear data
@@ -505,7 +596,12 @@ function render() {
     // Customer View
     if (myTicketId) {
         const myEntry = state.queue.find(q => q.id === myTicketId);
-        if (!myEntry) { leaveQueue(); return; }
+        
+        // Ticket was removed (completed or no-show) — show completed screen
+        if (!myEntry) {
+            showCompletedScreen();
+            return;
+        }
 
         const ticketNumDisplay = document.getElementById('ticket-number-display');
         const ticketServiceDisplay = document.getElementById('ticket-service-display');
@@ -525,6 +621,10 @@ function render() {
             if("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
         }
         previousStatus = myEntry.status;
+
+        // Ensure completed panel is hidden when in active states
+        const completedPanel = document.getElementById('completed-info-panel');
+        if (completedPanel) completedPanel.classList.add('hidden');
 
         if (myEntry.status === 'waiting') {
             header.className = "bg-indigo-600 p-8 text-center relative overflow-hidden transition-colors duration-500";
@@ -624,13 +724,21 @@ function render() {
                 detailsDiv.appendChild(serviceDiv);
                 
                 const statusDiv = document.createElement('div');
-                statusDiv.className = 'w-32 text-right';
+                statusDiv.className = 'w-32 text-right flex items-center justify-end gap-2';
                 const statusSpan = document.createElement('span');
                 if (isServing) {
                     statusSpan.className = 'inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md text-xs font-bold';
                     statusSpan.innerHTML = `<i data-lucide="mic" class="w-3 h-3"></i> Counter ${q.counter}`;
                 } else {
-                    statusSpan.className = 'bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-xs font-medium';
+                    // Priority call button for waiting customers
+                    const callBtn = document.createElement('button');
+                    callBtn.className = 'bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 px-2 py-1 rounded-md text-xs font-bold transition-colors';
+                    callBtn.textContent = 'Call';
+                    callBtn.title = 'Priority: Call this customer next';
+                    callBtn.onclick = (e) => { e.stopPropagation(); callSpecific(q.id); };
+                    statusDiv.appendChild(callBtn);
+                    
+                    statusSpan.className = 'bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-300 px-2 py-1 rounded-md text-xs font-medium';
                     statusSpan.textContent = 'Waiting';
                 }
                 statusDiv.appendChild(statusSpan);
