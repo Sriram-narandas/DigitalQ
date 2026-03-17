@@ -268,7 +268,6 @@ let currentSystemRef = null;
 let state = {
   queue: [],
   currentTicket: null,
-  lastCompletedTicketId: null,
   lastTicketNumber: 0,
   stats: { totalServed: 0, totalWaitTime: 0 },
   settings: {
@@ -299,7 +298,6 @@ function switchSystem(systemKey) {
   state = {
     queue: [],
     currentTicket: null,
-    lastCompletedTicketId: null,
     lastTicketNumber: 0,
     stats: { totalServed: 0, totalWaitTime: 0 },
     settings: {
@@ -523,31 +521,7 @@ function saveSettings() {
 }
 
 // --- CUSTOMER LOGIC ---
-const MY_TICKET_ID_KEY = "digitalq-my-ticket-id";
-const MY_TICKET_SYSTEM_KEY = "digitalq-my-ticket-system";
-
-let myTicketId = localStorage.getItem(MY_TICKET_ID_KEY);
-let completionShownForTicketId = null;
-const savedTicketSystemKey = localStorage.getItem(MY_TICKET_SYSTEM_KEY);
-
-if (myTicketId && savedTicketSystemKey) {
-  activeSystemKey = savedTicketSystemKey;
-}
-
-function setMyTicketId(ticketId) {
-  myTicketId = ticketId;
-  if (ticketId) {
-    localStorage.setItem(MY_TICKET_ID_KEY, ticketId);
-    localStorage.setItem(MY_TICKET_SYSTEM_KEY, activeSystemKey);
-  }
-}
-
-function clearMyTicketId() {
-  myTicketId = null;
-  completionShownForTicketId = null;
-  localStorage.removeItem(MY_TICKET_ID_KEY);
-  localStorage.removeItem(MY_TICKET_SYSTEM_KEY);
-}
+let myTicketId = null;
 
 function renderCustomerJoin() {
   const container = document.getElementById("service-options-container");
@@ -755,8 +729,7 @@ function joinQueue() {
   };
 
   state.queue.push(newEntry);
-  setMyTicketId(newEntry.id);
-  completionShownForTicketId = null;
+  myTicketId = newEntry.id;
   saveState();
 
   document.getElementById("customer-join").classList.add("hidden");
@@ -790,7 +763,7 @@ function leaveQueue() {
 
   if (myTicketId) {
     state.queue = state.queue.filter((q) => q.id !== myTicketId);
-    clearMyTicketId();
+    myTicketId = null;
     previousStatus = null;
     saveState();
   }
@@ -822,9 +795,8 @@ function showCompletedScreen() {
     timerInterval = null;
   }
 
-  const shouldPlayCompletionChime =
-    myTicketId && completionShownForTicketId !== myTicketId;
-  if (myTicketId) completionShownForTicketId = myTicketId;
+  // Clear ticket so this doesn't re-fire on every render cycle
+  myTicketId = null;
   previousStatus = null;
 
   const customerJoinView = document.getElementById("customer-join");
@@ -853,26 +825,12 @@ function showCompletedScreen() {
   const waitTimer = document.getElementById("wait-timer");
   if (waitTimer) waitTimer.innerText = "";
 
-  if (shouldPlayCompletionChime) {
-    playChime();
-  }
+  playChime();
   lucide.createIcons();
 }
 
-function scheduleCompletedCleanup(ticketId, delayMs = 20000) {
-  setTimeout(() => {
-    const idx = state.queue.findIndex(
-      (q) => q.id === ticketId && q.status === "completed",
-    );
-    if (idx !== -1) {
-      state.queue.splice(idx, 1);
-      saveState();
-    }
-  }, delayMs);
-}
-
 function backToJoin() {
-  clearMyTicketId();
+  myTicketId = null;
   previousStatus = null;
 
   const completedPanel = document.getElementById("completed-info-panel");
@@ -920,8 +878,6 @@ function callNext() {
         state.stats.totalWaitTime += waitMins;
       item.status = "completed";
       item.completedAt = new Date();
-      state.lastCompletedTicketId = item.id;
-      scheduleCompletedCleanup(item.id);
       state.currentTicket = null;
     }
   }
@@ -957,8 +913,6 @@ function completeCurrent() {
     // Mark as completed first so customer app can show completion state
     item.status = "completed";
     item.completedAt = new Date();
-    state.lastCompletedTicketId = item.id;
-    scheduleCompletedCleanup(item.id);
     state.currentTicket = null;
     saveState();
     showToast("Ticket Completed");
@@ -994,8 +948,6 @@ function callSpecific(ticketId) {
         state.stats.totalWaitTime += waitMins;
       item.status = "completed";
       item.completedAt = new Date();
-      state.lastCompletedTicketId = item.id;
-      scheduleCompletedCleanup(item.id);
       state.currentTicket = null;
     }
   }
@@ -1029,7 +981,6 @@ function resetSystem() {
     state = {
       queue: [],
       currentTicket: null,
-      lastCompletedTicketId: null,
       lastTicketNumber: 0,
       stats: { totalServed: 0, totalWaitTime: 0 },
       settings: savedSettings,
@@ -1054,11 +1005,9 @@ function render() {
     if (myTicketId) {
       const myEntry = state.queue.find((q) => q.id === myTicketId);
 
-      // Ticket removed from queue: only show completed if it was actually completed
+      // Ticket was removed (completed or no-show) - show completed screen
       if (!myEntry) {
-        if (state.lastCompletedTicketId === myTicketId) {
-          showCompletedScreen();
-        }
+        showCompletedScreen();
       } else {
         const ticketNumDisplay = document.getElementById(
           "ticket-number-display",
