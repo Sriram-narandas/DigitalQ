@@ -271,6 +271,7 @@ let state = {
   currentTicket: null,
   lastTicketNumber: 0,
   stats: { totalServed: 0, totalWaitTime: 0 },
+  ticketOutcomes: {},
   settings: {
     businessName: "DigitalQ",
     services: ["Sales", "Support", "Inquiry"],
@@ -282,6 +283,9 @@ function ensureStats() {
   if (typeof state.stats.totalServed !== "number") state.stats.totalServed = 0;
   if (typeof state.stats.totalWaitTime !== "number")
     state.stats.totalWaitTime = 0;
+  if (!state.ticketOutcomes || typeof state.ticketOutcomes !== "object") {
+    state.ticketOutcomes = {};
+  }
 }
 
 // Switch active system — detach old listener, point to new Firebase path, reload
@@ -301,6 +305,7 @@ function switchSystem(systemKey) {
     currentTicket: null,
     lastTicketNumber: 0,
     stats: { totalServed: 0, totalWaitTime: 0 },
+    ticketOutcomes: {},
     settings: {
       businessName: preset ? preset.name : "DigitalQ",
       services: preset ? [...preset.services] : ["Sales", "Support", "Inquiry"],
@@ -910,6 +915,7 @@ function callNext() {
         state.stats.totalWaitTime += waitMins;
       item.status = "completed";
       item.completedAt = new Date();
+      state.ticketOutcomes[item.id] = "completed";
       state.currentTicket = null;
     }
   }
@@ -945,6 +951,7 @@ function completeCurrent() {
     // Mark as completed first so customer app can show completion state
     item.status = "completed";
     item.completedAt = new Date();
+    state.ticketOutcomes[item.id] = "completed";
     state.currentTicket = null;
     saveState();
     showToast("Ticket Completed");
@@ -958,6 +965,7 @@ function markDeclined() {
     const item = state.queue[idx];
     item.status = "declined";
     item.declinedAt = new Date();
+    state.ticketOutcomes[item.id] = "declined";
     state.currentTicket = null;
     saveState();
     showToast("Marked Declined");
@@ -981,6 +989,7 @@ function callSpecific(ticketId) {
         state.stats.totalWaitTime += waitMins;
       item.status = "completed";
       item.completedAt = new Date();
+      state.ticketOutcomes[item.id] = "completed";
       state.currentTicket = null;
     }
   }
@@ -1016,6 +1025,7 @@ function resetSystem() {
       currentTicket: null,
       lastTicketNumber: 0,
       stats: { totalServed: 0, totalWaitTime: 0 },
+      ticketOutcomes: {},
       settings: savedSettings,
     };
     saveState();
@@ -1036,11 +1046,14 @@ function render() {
 
     // Customer View
     if (myTicketId) {
+      const myOutcome = state.ticketOutcomes
+        ? state.ticketOutcomes[myTicketId]
+        : null;
       const myEntry = state.queue.find((q) => q.id === myTicketId);
 
       // Ticket was removed (legacy/reset scenario)
       if (!myEntry) {
-        showCompletedScreen(lastTerminalOutcome || "completed");
+        showCompletedScreen(myOutcome || lastTerminalOutcome || "completed");
       } else {
         const ticketNumDisplay = document.getElementById(
           "ticket-number-display",
