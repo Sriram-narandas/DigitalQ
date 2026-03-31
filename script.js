@@ -240,6 +240,7 @@ function toggleAudio() {
 // --- Logic ---
 lucide.createIcons();
 let timerInterval;
+let lastTerminalOutcome = null;
 
 // PRESETS CONFIG — each is an independent system
 const PRESETS = {
@@ -765,6 +766,7 @@ function leaveQueue() {
     state.queue = state.queue.filter((q) => q.id !== myTicketId);
     myTicketId = null;
     previousStatus = null;
+    lastTerminalOutcome = null;
     saveState();
   }
 
@@ -789,7 +791,7 @@ function leaveQueue() {
   if (ticketView) ticketView.classList.add("hidden");
 }
 
-function showCompletedScreen() {
+function showCompletedScreen(outcome = "completed") {
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
@@ -798,6 +800,7 @@ function showCompletedScreen() {
   // Clear ticket so this doesn't re-fire on every render cycle
   myTicketId = null;
   previousStatus = null;
+  lastTerminalOutcome = outcome;
 
   const customerJoinView = document.getElementById("customer-join");
   const customerTicketView = document.getElementById("customer-ticket");
@@ -811,11 +814,39 @@ function showCompletedScreen() {
   const completedPanel = document.getElementById("completed-info-panel");
   const btnLeave = document.getElementById("btn-leave-queue");
   const btnBack = document.getElementById("btn-back-to-join");
+  const completedIcon = completedPanel
+    ? completedPanel.querySelector("i[data-lucide]")
+    : null;
+  const completedTitle = completedPanel
+    ? completedPanel.querySelector("div.text-lg")
+    : null;
+  const completedMessage = completedPanel
+    ? completedPanel.querySelector("p")
+    : null;
 
+  const isDeclined = outcome === "declined";
   if (header)
-    header.className =
-      "bg-emerald-600 p-8 text-center relative overflow-hidden transition-colors duration-500";
-  if (statusTxt) statusTxt.textContent = "Completed";
+    header.className = isDeclined
+      ? "bg-red-600 p-8 text-center relative overflow-hidden transition-colors duration-500"
+      : "bg-emerald-600 p-8 text-center relative overflow-hidden transition-colors duration-500";
+  if (statusTxt) statusTxt.textContent = isDeclined ? "Declined" : "Completed";
+  if (completedPanel)
+    completedPanel.className = isDeclined
+      ? "text-center mb-8 animate-pop"
+      : "text-center mb-8 animate-pop";
+  if (completedIcon)
+    completedIcon.setAttribute(
+      "data-lucide",
+      isDeclined ? "x-circle" : "check-circle",
+    );
+  if (completedTitle)
+    completedTitle.textContent = isDeclined
+      ? "Service Declined"
+      : "Service Completed";
+  if (completedMessage)
+    completedMessage.textContent = isDeclined
+      ? "This request was declined by staff."
+      : "Thank you for visiting!";
   if (waitingPanel) waitingPanel.classList.add("hidden");
   if (servingPanel) servingPanel.classList.add("hidden");
   if (completedPanel) completedPanel.classList.remove("hidden");
@@ -832,6 +863,7 @@ function showCompletedScreen() {
 function backToJoin() {
   myTicketId = null;
   previousStatus = null;
+  lastTerminalOutcome = null;
 
   const completedPanel = document.getElementById("completed-info-panel");
   const btnLeave = document.getElementById("btn-leave-queue");
@@ -919,15 +951,16 @@ function completeCurrent() {
   }
 }
 
-function markNoShow() {
+function markDeclined() {
   if (!state.currentTicket) return;
   const idx = state.queue.findIndex((q) => q.id === state.currentTicket.id);
   if (idx !== -1) {
-    // Remove no-show ticket from queue (deletes from database)
-    state.queue.splice(idx, 1);
+    const item = state.queue[idx];
+    item.status = "declined";
+    item.declinedAt = new Date();
     state.currentTicket = null;
     saveState();
-    showToast("Marked No Show & Removed");
+    showToast("Marked Declined");
   }
 }
 
@@ -1005,9 +1038,9 @@ function render() {
     if (myTicketId) {
       const myEntry = state.queue.find((q) => q.id === myTicketId);
 
-      // Ticket was removed (completed or no-show) - show completed screen
+      // Ticket was removed (legacy/reset scenario)
       if (!myEntry) {
-        showCompletedScreen();
+        showCompletedScreen(lastTerminalOutcome || "completed");
       } else {
         const ticketNumDisplay = document.getElementById(
           "ticket-number-display",
@@ -1071,7 +1104,11 @@ function render() {
           if (waitingPanel) waitingPanel.classList.add("hidden");
           if (servingPanel) servingPanel.classList.remove("hidden");
         } else if (myEntry.status === "completed") {
+          lastTerminalOutcome = "completed";
           showCompletedScreen();
+        } else if (myEntry.status === "declined") {
+          lastTerminalOutcome = "declined";
+          showCompletedScreen("declined");
         }
       } // end else (myEntry exists)
     }
